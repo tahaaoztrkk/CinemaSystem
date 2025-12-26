@@ -6,13 +6,14 @@ import json
 import datetime
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
+from django.db.models import Avg
 
 # Modellerini içeri aktar
 from .models import Movie, Booking, AppUser, Showtime, Salon, Review
 
 # views.py dosyasındaki index fonksiyonunu şöyle değiştir:
 def index(request):
-    db_movies = Movie.objects.all()
+    db_movies = Movie.objects.annotate(avg_rating=Avg('review__rating'))
     db_bookings = Booking.objects.all() # Dolu koltuklar için hepsi lazım
     db_reviews = Review.objects.all().order_by('-created_at')
     # KULLANICIYA ÖZEL BİLETLERİ ÇEKME

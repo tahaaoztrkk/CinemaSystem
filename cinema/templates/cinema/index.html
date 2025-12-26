@@ -193,7 +193,7 @@
                 title: "{{ movie.title }}",
                 genre: "{{ movie.genre }}",
                 director: "{{ movie.director }}",
-                rating: 4.8, 
+                rating: {{ movie.avg_rating|default:0|stringformat:".1f" }}, 
                 price: 150,
                 image: "{{ movie.poster_url|safe|default:'https://via.placeholder.com/300x450' }}"
             }{% if not forloop.last %},{% endif %}
