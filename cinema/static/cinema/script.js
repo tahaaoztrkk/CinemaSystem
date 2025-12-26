@@ -1,45 +1,20 @@
-// --- 1. GLOBAL VERİLER VE DEĞİŞKENLER ---
-let currentSessionTime = "13:00"; // Varsayılan saat
 
-// SİSTEMDEKİ TÜM KULLANICILAR (Chatbot analizi için gerekli)
-const usersDB = [
-    { username: "ali", name: "Ali Veli", favGenre: "Action" },
-    { username: "ayse", name: "Ayşe Y.", favGenre: "Drama" },
-    { username: "mehmet", name: "Mehmet K.", favGenre: "Sci-Fi" },
-    { username: "user", name: "Taha Öztürk", favGenre: "Sci-Fi" } // Bizim kullanıcımız
-];
+let currentSessionTime = "13:00"; 
+let selectedMoviePrice = 0;
+let currentMovieId = null;
 
+// Basit Kullanıcı (Sadece tür tercihi için)
 const currentUser = { 
-    id: 101, 
-    name: "Taha Öztürk", 
-    favoriteGenre: "Sci-Fi",
-    friends: ["Ali Veli", "Ayşe Y."] // Arkadaş Listesi
+    favoriteGenre: "Sci-Fi" // Tenet Sci-Fi olduğu için ana sayfada görünecek
 };
 
+// Dolu Koltuklar (Şimdilik Sahte, sonra DB'den çekeceğiz)
 const allBookings = [
-    // 13:00 Seansı için rezervasyonlar
-    { movieId: 1, seatIndex: 10, user: "Ali Veli", time: "13:00" }, 
-    { movieId: 1, seatIndex: 11, user: "Mehmet K.", time: "13:00" },
-    
-    // 17:00 Seansı için rezervasyonlar (Farklı koltuklar dolu olabilir!)
-    { movieId: 1, seatIndex: 15, user: "Ayşe Y.", time: "17:00" }, // Aynı koltuk, farklı saat!
-    { movieId: 1, seatIndex: 40, user: "Veli Can", time: "17:00" }
+    { movieId: 1, seatIndex: 10, time: "13:00" }, // Örnek dolu koltuk
 ];
 
-const reviews = [
-    { movieId: 1, user: "Ali Veli", rating: 5, comment: "Nolan yine yapmış yapacağını! Harika." },
-    { movieId: 1, user: "Ayşe Y.", rating: 4, comment: "Görsel şölen ama biraz uzun." },
-    { movieId: 2, user: "Mehmet K.", rating: 5, comment: "Gelmiş geçmiş en iyi Joker." }
-];
-
-/// Kullanıcı Biletleri (Mock DB) - GÜNCELLENMİŞ HALİ
-const userTickets = [
-    { movie: "Inception", date: "20.12.2025", time: "20:00", seats: "A1, A2", total: 300 }
-];
-
-// Global Kontrol Değişkenleri
-let selectedMoviePrice = 0;
-let currentMovieId = null; 
+// Kullanıcının aldığı biletleri tutan geçici dizi
+//const userTickets = [];
 
 // --- 2. DOM ELEMENTLERİ ---
 const moviesGrid = document.getElementById('movies-grid');
@@ -50,26 +25,32 @@ const seatsContainer = document.getElementById('seats-grid');
 const countSpan = document.getElementById('count');
 const totalSpan = document.getElementById('total');
 const confirmBtn = document.getElementById('confirm-btn');
+const homeSection = document.getElementById('home-section');
+const profileSection = document.getElementById('profile-section');
+const heroSection = document.querySelector('.hero');
 
-// --- 3. ANA FONKSİYONLAR ---
+// --- 3. TEMEL FONKSİYONLAR ---
 
-// Filmleri Ekrana Bas
+// Filmleri Ekrana Bas (HTML'den gelen 'movies' değişkenini kullanır)
 function renderMovies() {
+    if (!moviesGrid) return; // Hata önleyici
+
     moviesGrid.innerHTML = '';
     recommendedGrid.innerHTML = '';
 
-    // Tüm Filmler
+    // Tüm Filmleri Listele
     movies.forEach(movie => {
         moviesGrid.appendChild(createMovieCard(movie));
     });
 
-    // Önerilenler (Sci-Fi)
+    // Sadece Favori Türü Listele
     const recommendations = movies.filter(m => m.genre === currentUser.favoriteGenre);
     recommendations.forEach(movie => {
         recommendedGrid.appendChild(createMovieCard(movie));
     });
 }
 
+// Film Kartı HTML Oluşturucu
 function createMovieCard(movie) {
     const div = document.createElement('div');
     div.classList.add('movie-card');
@@ -96,24 +77,12 @@ function openBooking(movie) {
     document.getElementById('modal-title').innerText = movie.title;
     document.getElementById('modal-info').innerText = `${movie.director} | ${movie.genre}`;
     
-    switchTab('booking');
     generateSeats();
     updateSelection();
-    loadReviews(movie.id);
 }
 
-// Tab Değiştirme
-function switchTab(tabName) {
-    document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
-    document.getElementById(`tab-${tabName}`).classList.add('active');
-
-    document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
-    if(tabName === 'booking') document.querySelector('.tab-btn:nth-child(1)').classList.add('active');
-    else document.querySelector('.tab-btn:nth-child(2)').classList.add('active');
-}
-
-
-// Koltuk Oluşturma (GÜNCELLENMİŞ VERSİYON)
+// Koltukları Çiz
+// Koltukları Çiz (GÜNCELLENMİŞ)
 function generateSeats() {
     seatsContainer.innerHTML = '';
     
@@ -121,32 +90,32 @@ function generateSeats() {
         const seat = document.createElement('div');
         seat.classList.add('seat');
 
-        // 1. Bu koltuk veritabanında dolu mu?
-        const booking = allBookings.find(b => b.movieId === currentMovieId && b.seatIndex === i);
+        // dbBookings listesinden kontrol et:
+        // 1. Film ID eşleşiyor mu?
+        // 2. Koltuk numarası eşleşiyor mu?
+        // 3. Seans saati eşleşiyor mu?
+        const isOccupied = dbBookings.find(b => 
+            b.movieId === currentMovieId && 
+            b.seatIndex === i && 
+            b.time === currentSessionTime
+        );
 
-        if (booking) {
-            // Koltuk Dolu
-            seat.classList.add('occupied');
-            
-            // 2. Doluysa, oturan kişi arkadaşım mı?
-            if (currentUser.friends.includes(booking.user)) {
-                seat.classList.add('friend'); // Mavi renk sınıfı
-                seat.setAttribute('data-name', `${booking.user} Burada!`); // İsim etiketi
-                seat.innerText = "★"; // Yıldız ikonu
-            }
+        if (isOccupied) {
+            seat.classList.add('occupied'); // Dolu olarak işaretle
         } else {
-            // Koltuk Boşsa tıklama özelliği ekle
             seat.addEventListener('click', () => {
-                seat.classList.toggle('selected');
-                updateSelection();
+                // Sadece boşsa tıklanabilsin
+                if (!seat.classList.contains('occupied')) {
+                    seat.classList.toggle('selected');
+                    updateSelection();
+                }
             });
         }
-        
         seatsContainer.appendChild(seat);
     }
 }
 
-// Fiyat Güncelle
+// Fiyat Hesapla
 function updateSelection() {
     const selectedSeats = seatsContainer.querySelectorAll('.seat.selected');
     const count = selectedSeats.length;
@@ -154,274 +123,299 @@ function updateSelection() {
     totalSpan.innerText = count * selectedMoviePrice;
 }
 
-// --- 4. BUTON İŞLEMLERİ ---
+// --- 4. ETKİLEŞİM VE BUTONLAR ---
 
-// Seans Saati Değiştirme Fonksiyonu
+// Seans Değiştir
 function selectSession(time, btnElement) {
-    // 1. Global saati güncelle
     currentSessionTime = time;
-
-    // 2. Görsel güncelleme (Active class'ı taşı)
     document.querySelectorAll('.time-btn').forEach(btn => btn.classList.remove('active'));
     btnElement.classList.add('active');
-
-    // 3. Koltukları bu saate göre yeniden çiz
-    generateSeats();
-    updateSelection(); // Fiyatı sıfırla
+    generateSeats(); // Koltukları yeni saate göre yenile
+    updateSelection();
 }
 
-// 2. Rezervasyon Onay Butonu (GÜNCELLENMİŞ)
-confirmBtn.onclick = () => {
-    const count = parseInt(countSpan.innerText);
+// Bilet Al (Onayla)
+// Bilet Al (Onayla)
+// Bilet Al (Onayla)
+confirmBtn.onclick = async () => {
+    const selectedSeats = seatsContainer.querySelectorAll('.seat.selected');
     
-    if (count > 0) {
-        const movieTitle = document.getElementById('modal-title').innerText;
-        const total = totalSpan.innerText;
+    if (selectedSeats.length > 0) {
+        for (let seat of selectedSeats) {
+            const seatIndex = Array.from(seatsContainer.children).indexOf(seat);
+            const bookingData = {
+                movieId: currentMovieId,
+                seatIndex: seatIndex, // userName göndermiyoruz, backend kendi buluyor
+                sessionTime: currentSessionTime 
+            };
 
-        // Bileti Kaydet (Saat bilgisiyle beraber)
-        userTickets.push({
-            movie: movieTitle,
-            date: new Date().toLocaleDateString(),
-            time: currentSessionTime, // SEÇİLEN SAAT (13:00 veya 17:00)
-            seats: count + " adet",
-            total: total
-        });
+            try {
+                const response = await fetch('/api/book/', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(bookingData)
+                });
+                
+                const result = await response.json();
+                
+                // ÖZEL DURUM: Eğer giriş yapılmamışsa (401 Hatası)
+                if (response.status === 401) {
+                    alert(result.message); // "Lütfen giriş yapınız" mesajı
+                    modal.style.display = 'none'; // Koltuk seçimini kapat
+                    loginModal.style.display = 'flex'; // Giriş ekranını aç
+                    return; // İşlemi durdur
+                }
 
-        alert(`Tebrikler! ${count} adet bilet başarıyla rezerve edildi.\nSeans: ${currentSessionTime}\nToplam: ${total} TL`);
-        modal.style.display = 'none';
+                if(result.status === 'error') {
+                    alert("Hata: " + result.message);
+                    return;
+                }
 
-        // Profil açıksa tabloyu anlık güncelle
-        if(document.getElementById('profile-section').style.display === 'block') {
-            renderUserTickets();
+            } catch (error) {
+                console.error('Hata:', error);
+                alert("Bağlantı hatası!");
+                return;
+            }
         }
+        alert("Biletleriniz başarıyla alındı!");
+        modal.style.display = 'none';
+        location.reload(); 
     } else {
-        alert("Lütfen en az bir koltuk seçin.");
+        alert("Lütfen koltuk seçiniz.");
     }
 };
 
-// [BUTON 2] Yorum Gönder
-function submitReview() {
-    const userInfoEl = document.querySelector('.user-info');
-    if (!userInfoEl) { alert("Sistem Hatası: Kullanıcı bilgisi bulunamadı."); return; }
+// --- 5. NAVİGASYON ---
 
-    const userText = userInfoEl.innerText;
-    if (userText.includes("Misafir")) {
-        alert("Yorum yapmak için lütfen sağ üstten 'Giriş Yap' butonuna basınız.");
-        return;
-    }
-
-    const commentText = document.getElementById('review-text').value;
-    const selectedRating = document.querySelector('input[name="rate"]:checked');
-
-    if (!selectedRating) { alert("Lütfen bir yıldız puanı seçin."); return; }
-    if (commentText.trim() === "") { alert("Lütfen bir yorum yazın."); return; }
-
-    // Aynı kullanıcı tekrar yorum yapamasın
-    const userName = userText.trim();
-    const alreadyReviewed = reviews.some(r => r.movieId === currentMovieId && r.user === userName);
-    if(alreadyReviewed) {
-        alert("Bu film için zaten yorum yaptınız!");
-        return;
-    }
-
-    reviews.push({
-        movieId: currentMovieId,
-        user: userName,
-        rating: parseInt(selectedRating.value),
-        comment: commentText
-    });
-
-    document.getElementById('review-text').value = '';
-    selectedRating.checked = false;
-    loadReviews(currentMovieId);
-    alert("Yorumunuz eklendi!");
-}
-
-// Yorumları Listele
-function loadReviews(movieId) {
-    const movieReviews = reviews.filter(r => r.movieId === movieId);
-    const listContainer = document.getElementById('reviews-list');
-    listContainer.innerHTML = '';
-
-    let totalRating = 0;
-    movieReviews.forEach(r => {
-        totalRating += r.rating;
-        const div = document.createElement('div');
-        div.classList.add('review-item');
-        const stars = "★".repeat(r.rating) + "☆".repeat(5 - r.rating);
-        div.innerHTML = `<div class="review-user">${r.user} <span class="review-stars">${stars}</span></div><div class="review-text">${r.comment}</div>`;
-        listContainer.appendChild(div);
-    });
-
-    const count = movieReviews.length;
-    const average = count > 0 ? (totalRating / count).toFixed(1) : "0.0";
-    document.getElementById('avg-rating-display').innerText = average;
-    document.getElementById('review-count').innerText = count;
-}
-
-// --- 5. GİRİŞ VE PANEL YÖNETİMİ ---
-
-const loginModal = document.getElementById('login-modal');
-const homeSection = document.getElementById('home-section');
-const adminSection = document.getElementById('admin-section');
-const profileSection = document.getElementById('profile-section');
-const heroSection = document.querySelector('.hero');
-
-// Sayfa Değiştir
 function showSection(sectionName) {
     homeSection.style.display = 'none';
-    adminSection.style.display = 'none';
     profileSection.style.display = 'none';
     heroSection.style.display = 'none';
 
     if (sectionName === 'home') {
         homeSection.style.display = 'block';
         heroSection.style.display = 'flex';
-        renderMovies();
-    } else if (sectionName === 'admin') {
-        adminSection.style.display = 'block';
-        renderAdminTable();
     } else if (sectionName === 'profile') {
         profileSection.style.display = 'block';
-        renderUserTickets();
-    }
-}
-
-// Login İşlemleri
-document.getElementById('login-btn').onclick = () => loginModal.style.display = 'flex';
-document.querySelector('.close-login').onclick = () => loginModal.style.display = 'none';
-document.getElementById('logout-btn').onclick = logout;
-
-function login() {
-    const user = document.getElementById('username').value;
-    const pass = document.getElementById('password').value;
-
-    if (user === 'admin' && pass === 'admin') {
-        alert("Admin girişi başarılı.");
-        document.getElementById('admin-link').style.display = 'block';
-        setupAuthUI(true, "Admin");
-        showSection('admin');
-    } else if (user === 'user' && pass === 'user') {
-        alert("Kullanıcı girişi başarılı.");
-        document.getElementById('user-link').style.display = 'block';
-        setupAuthUI(true, "Taha Öztürk");
-        showSection('profile');
-    } else {
-        alert("Hatalı kullanıcı adı veya şifre!");
-    }
-    loginModal.style.display = 'none';
-}
-
-function logout() {
-    setupAuthUI(false);
-    showSection('home');
-    document.getElementById('admin-link').style.display = 'none';
-    document.getElementById('user-link').style.display = 'none';
-}
-
-function setupAuthUI(isLoggedIn, name = "") {
-    const userInfoDiv = document.querySelector('.user-info');
-    if (isLoggedIn) {
-        document.getElementById('login-btn').style.display = 'none';
-        document.getElementById('logout-btn').style.display = 'block';
-        userInfoDiv.innerHTML = `<i class="fas fa-user-circle"></i> ${name}`;
-    } else {
-        document.getElementById('login-btn').style.display = 'block';
-        document.getElementById('logout-btn').style.display = 'none';
-        userInfoDiv.innerHTML = `<i class="fas fa-user-circle"></i> Misafir`;
-    }
-}
-
-// --- 6. ADMIN & USER TABLOLARI ---
-
-function renderUserTickets() {
-    const tbody = document.getElementById('user-tickets-body');
-    tbody.innerHTML = '';
-    
-    userTickets.forEach(ticket => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${ticket.movie}</td>
-            <td>${ticket.date}</td>
-            <td><span class="highlight">${ticket.time}</span></td> <td>${ticket.seats}</td>
-            <td>${ticket.total} TL</td>
-        `;
-        tbody.appendChild(tr);
-    });
-}
-
-function renderAdminTable() {
-    const tbody = document.getElementById('admin-movies-body');
-    tbody.innerHTML = '';
-    movies.forEach((movie, index) => {
-        const tr = document.createElement('tr');
-        tr.innerHTML = `
-            <td>${movie.id}</td><td>${movie.title}</td><td>${movie.director}</td><td>${movie.genre}</td>
-            <td><button class="delete-btn" onclick="deleteMovie(${index})">Sil</button></td>`;
-        tbody.appendChild(tr);
-    });
-}
-
-function addNewMovie() {
-    const title = document.getElementById('new-title').value;
-    const director = document.getElementById('new-director').value;
-    const genre = document.getElementById('new-genre').value;
-    if(title) {
-        movies.push({ id: movies.length + 1, title, director, genre, rating: 0, price: 150, image: "https://via.placeholder.com/300x450" });
-        renderAdminTable();
-        alert("Film eklendi.");
-    }
-}
-
-function deleteMovie(index) {
-    if(confirm("Silmek istediğine emin misin?")) {
-        movies.splice(index, 1);
-        renderAdminTable();
-    }
-}
-
-// --- 7. CHATBOT ---
-const chatIcon = document.getElementById('chatbot-icon');
-const chatBox = document.getElementById('chatbot-box');
-const closeChat = document.getElementById('close-chat');
-const sendBtn = document.getElementById('send-btn');
-const userInput = document.getElementById('user-input');
-const chatBody = document.getElementById('chat-body');
-
-chatIcon.onclick = () => chatBox.style.display = 'flex';
-closeChat.onclick = () => chatBox.style.display = 'none';
-sendBtn.onclick = sendMessage;
-userInput.addEventListener("keypress", (e) => { if (e.key === "Enter") sendMessage(); });
-
-function sendMessage() {
-    const text = userInput.value.trim().toLowerCase();
-    if (text === "") return;
-    addMessage(userInput.value, 'user-msg');
-    userInput.value = '';
-
-    setTimeout(() => {
-        let botResponse = "Anlayamadım. Film önerisi veya seans sorabilirsin.";
-        if (text.includes("öner") || text.includes("film")) {
-             if(text.includes("aksiyon")) botResponse = "Aksiyon için The Dark Knight öneririm.";
-             else if (text.includes("bilim")) botResponse = "Bilim kurgu için Inception harika.";
-             else botResponse = "Hangi tür istersin?";
-        } else if (text.includes("merhaba")) botResponse = "Merhaba, nasıl yardımcı olabilirim?";
         
-        addMessage(botResponse, 'bot-msg');
-        chatBody.scrollTop = chatBody.scrollHeight;
-    }, 500);
+    }
 }
 
-function addMessage(text, cls) {
-    const div = document.createElement('div');
-    div.classList.add(cls);
-    div.innerText = text;
-    chatBody.appendChild(div);
+
+// --- 5. GİRİŞ VE PANEL YÖNETİMİ ---
+
+const loginModal = document.getElementById('login-modal');
+const registerModal = document.getElementById('register-modal');
+
+// GÜVENLİ BUTONLAR
+const loginBtn = document.getElementById('login-btn');
+if (loginBtn) {
+    loginBtn.onclick = () => { if (loginModal) loginModal.style.display = 'flex'; };
 }
 
-// Modal Kapatma Eventleri
+const logoutBtn = document.getElementById('logout-btn');
+if (logoutBtn) {
+    logoutBtn.onclick = async () => {
+        await fetch('/api/logout/');
+        location.reload(); 
+    };
+}
+
+// KAPATMA BUTONLARI (X işaretleri)
+document.querySelectorAll('.close-login').forEach(btn => {
+    btn.onclick = () => { if (loginModal) loginModal.style.display = 'none'; };
+});
+document.querySelectorAll('.close-register').forEach(btn => {
+    btn.onclick = () => { if (registerModal) registerModal.style.display = 'none'; };
+});
+
+// PENCERE GEÇİŞİ (Giriş <-> Kayıt)
+function switchModal(target) {
+    if (target === 'register') {
+        loginModal.style.display = 'none';
+        registerModal.style.display = 'flex';
+    } else {
+        registerModal.style.display = 'none';
+        loginModal.style.display = 'flex';
+    }
+}
+
+// 1. GİRİŞ YAP FONKSİYONU
+async function login() {
+    const userInp = document.getElementById('username').value;
+    const passInp = document.getElementById('password').value;
+
+    try {
+        const response = await fetch('/api/login/', {
+            method: 'POST',
+            body: JSON.stringify({ username: userInp, password: passInp })
+        });
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            alert("Hoşgeldin " + result.username);
+            location.reload(); 
+        } else {
+            alert("Hata: " + result.message);
+        }
+    } catch (error) { console.error(error); }
+}
+
+// 2. KAYIT OL FONKSİYONU (YENİ)
+async function register() {
+    const userInp = document.getElementById('reg-username').value;
+    const emailInp = document.getElementById('reg-email').value;
+    const passInp = document.getElementById('reg-password').value;
+
+    if (!userInp || !passInp) {
+        alert("Lütfen tüm alanları doldurun.");
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/register/', {
+            method: 'POST',
+            body: JSON.stringify({ username: userInp, email: emailInp, password: passInp })
+        });
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            alert("Kayıt Başarılı! Otomatik giriş yapılıyor...");
+            location.reload(); 
+        } else {
+            alert("Hata: " + result.message);
+        }
+    } catch (error) { console.error(error); }
+}
+
+// BİLET İPTAL FONKSİYONU
+async function cancelTicket(bookingId) {
+    if(!confirm("Bu bileti iptal etmek istediğinize emin misiniz?")) return;
+
+    try {
+        const response = await fetch('/api/cancel/', {
+            method: 'POST',
+            body: JSON.stringify({ booking_id: bookingId })
+        });
+        
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            alert("Bilet iptal edildi.");
+            location.reload(); // Sayfayı yenile ki listeden silinsin ve koltuk boşalsın
+        } else {
+            alert("Hata: " + result.message);
+        }
+    } catch (error) {
+        console.error("İptal hatası:", error);
+    }
+}
+
+// --- 6. YORUM VE SEKME YÖNETİMİ ---
+
+let currentRating = 0; // Seçilen yıldız puanı
+
+// Sekme Değiştirme (Booking <-> Review)
+function switchTab(tabName) {
+    document.getElementById('tab-booking').style.display = (tabName === 'booking') ? 'block' : 'none';
+    document.getElementById('tab-reviews').style.display = (tabName === 'reviews') ? 'block' : 'none';
+    
+    // Buton renklerini güncelle
+    const btns = document.querySelectorAll('.tab-btn');
+    if(tabName === 'booking') {
+        btns[0].style.backgroundColor = '#e50914';
+        btns[1].style.backgroundColor = '#333';
+    } else {
+        btns[0].style.backgroundColor = '#333';
+        btns[1].style.backgroundColor = '#e50914';
+        loadReviewsForMovie(); // Yorum sekmesi açılınca yorumları yükle
+    }
+}
+
+// Yıldız Seçme İşlemi
+function setRating(n) {
+    currentRating = n;
+    const stars = document.querySelectorAll('.star-rating span');
+    document.getElementById('rating-text').innerText = `(${n}/5)`;
+    
+    // Seçilen yıldıza kadar hepsini sarı yap
+    stars.forEach((star, index) => {
+        if (index < 5) { // Sadece yıldız olan spanları etkile
+            star.style.color = (index < n) ? '#f1c40f' : '#555';
+        }
+    });
+}
+
+// Yorumları Listele
+function loadReviewsForMovie() {
+    const list = document.getElementById('reviews-list');
+    list.innerHTML = '';
+
+    // Sadece bu filme ait yorumları filtrele
+    const movieReviews = dbReviews.filter(r => r.movieId === currentMovieId);
+
+    if (movieReviews.length === 0) {
+        list.innerHTML = '<p style="color:#aaa;">Henüz yorum yok. İlk yorumu sen yap!</p>';
+        return;
+    }
+
+    movieReviews.forEach(r => {
+        const div = document.createElement('div');
+        div.style.marginBottom = '15px';
+        div.style.paddingBottom = '10px';
+        div.style.borderBottom = '1px solid #444';
+        
+        // Yıldızları oluştur
+        const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
+        
+        // Onaylı İzleyici Rozeti
+        const badge = r.verified ? '<span style="background:green; font-size:10px; padding:2px 5px; border-radius:3px; margin-left:5px;">✓ İzledi</span>' : '';
+
+        div.innerHTML = `
+            <div style="font-weight:bold; color:#e50914;">${r.user} <span style="color:#f1c40f;">${stars}</span> ${badge}</div>
+            <div style="font-size:0.9rem; margin-top:5px;">${r.comment}</div>
+        `;
+        list.appendChild(div);
+    });
+}
+
+// Yorumu Gönder
+async function submitReview() {
+    const comment = document.getElementById('review-comment').value;
+
+    if (currentRating === 0) {
+        alert("Lütfen puan veriniz.");
+        return;
+    }
+
+    try {
+        const response = await fetch('/api/add_review/', {
+            method: 'POST',
+            body: JSON.stringify({
+                movieId: currentMovieId,
+                rating: currentRating,
+                comment: comment
+            })
+        });
+
+        const result = await response.json();
+
+        if (result.status === 'success') {
+            alert("Yorumunuz eklendi!");
+            location.reload(); // Sayfayı yenileyip yorumu göster
+        } else if (response.status === 401) {
+            alert("Yorum yapmak için giriş yapmalısınız.");
+        } else {
+            alert("Hata: " + result.message);
+        }
+    } catch (error) {
+        console.error(error);
+    }
+}
+
+// Modal Kapatma
 closeBtn.onclick = () => modal.style.display = 'none';
 window.onclick = (e) => { if (e.target == modal) modal.style.display = 'none'; }
 
-// Başlat
+// Uygulamayı Başlat
 renderMovies();

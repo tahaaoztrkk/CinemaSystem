@@ -1,59 +1,46 @@
-{% load static %} 
-
+{% load static %}
 <!DOCTYPE html>
 <html lang="tr">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Cinema</title>
-    
+    <title>Smart Cinema - Tenet Gösterimi</title>
     <link rel="stylesheet" href="{% static 'cinema/style.css' %}">
-    
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
-
-    <div id="chatbot-icon" class="chat-icon">
-        <i class="fas fa-robot"></i>
-    </div>
-
-    <div id="chatbot-box" class="chat-box">
-        <div class="chat-header">
-            <span>SmartBot Asistan</span>
-            <span id="close-chat">&times;</span>
-        </div>
-        <div class="chat-body" id="chat-body">
-            <div class="bot-msg">Merhaba! Film önerisi, seans saati veya puan sormak ister misin?</div>
-        </div>
-        <div class="chat-input">
-            <input type="text" id="user-input" placeholder="Bir şeyler yazın...">
-            <button id="send-btn"><i class="fas fa-paper-plane"></i></button>
-        </div>
-    </div>
 
     <nav class="navbar">
         <div class="logo">Smart<span class="highlight">Cinema</span></div>
         <ul class="nav-links">
             <li><a href="#" onclick="showSection('home')">Ana Sayfa</a></li>
-            <li id="admin-link" style="display:none;"><a href="#" onclick="showSection('admin')">Yönetim Paneli</a></li>
-            <li id="user-link" style="display:none;"><a href="#" onclick="showSection('profile')">Profilim</a></li>
+            
+            {% if user.is_authenticated %}
+                <li><a href="#" onclick="showSection('profile')">Profilim</a></li>
+            {% endif %}
         </ul>
-
-        <div class="user-info" style="margin-right: 15px; font-weight: bold; color: #fff;">
-            <i class="fas fa-user-circle"></i> Misafir
-        </div>
-
         <div class="auth-buttons">
-            <button id="login-btn" class="cta-btn" style="padding: 5px 15px; font-size: 0.9rem;">Giriş Yap</button>
-            <button id="logout-btn" class="cta-btn" style="padding: 5px 15px; font-size: 0.9rem; display:none; background:#333;">Çıkış</button>
+            {% if user.is_authenticated %}
+                <div class="user-info" style="display: inline-block; margin-right: 10px; color: white;">
+                    <i class="fas fa-user-circle"></i> {{ user.username }}
+                </div>
+                <button id="logout-btn" class="cta-btn" style="background:#333;">Çıkış</button>
+                <button id="login-btn" class="cta-btn" style="display:none;">Giriş Yap</button>
+            {% else %}
+                <div class="user-info" style="display: inline-block; margin-right: 10px; color: white;">
+                    <i class="fas fa-user-circle"></i> Misafir
+                </div>
+                <button id="login-btn" class="cta-btn">Giriş Yap</button>
+                <button id="logout-btn" class="cta-btn" style="display:none;">Çıkış</button>
+            {% endif %}
         </div>
     </nav>
 
     <header class="hero">
         <div class="hero-content">
-            <h1>Sinema Deneyimini Keşfet</h1>
-            <p>En yeni filmler, sana özel öneriler ve kolay rezervasyon.</p>
-            <button class="cta-btn">Bilet Al</button>
+            <h1>Sinemanın Geleceği</h1>
+            <p>Tenet ve en yeni filmler burada.</p>
+            <button class="cta-btn" onclick="document.getElementById('movies-grid').scrollIntoView();">Bilet Al</button>
         </div>
     </header>
 
@@ -61,161 +48,184 @@
         <main class="container">
             <section class="recommendations">
                 <h2><i class="fas fa-magic"></i> Sizin İçin Önerilenler</h2>
-                <p class="subtitle">İzleme geçmişinize ve sevdiğiniz türlere göre seçildi.</p>
-                <div class="movie-grid" id="recommended-grid">
-                    </div>
+                <div class="movie-grid" id="recommended-grid"></div>
             </section>
 
             <section class="all-movies">
                 <h2>Vizyondaki Filmler</h2>
-                <div class="movie-grid" id="movies-grid">
-                    </div>
+                <div class="movie-grid" id="movies-grid"></div>
             </section>
         </main>
     </div>
 
     <div id="profile-section" class="container" style="display: none;">
-        <div class="profile-layout">
-    <div class="profile-left">
-        <h2>Profilim & Biletlerim</h2>
-        <div class="profile-card">
-            <h3>Hoşgeldin, <span id="user-name-display">Misafir</span></h3>
-            <p>Favori Tür: <span class="highlight" id="user-fav-genre">-</span></p>
-        </div>
-        <h3>Geçmiş Biletlerim</h3>
-        <table class="data-table">
-            <thead><tr><th>Film</th><th>Tarih</th><th>Saat</th><th>Koltuk</th><th>Tutar</th></tr></thead>
-            <tbody id="user-tickets-body"></tbody>
-        </table>
-    </div>
-
-    <div class="profile-right">
-        <h3><i class="fas fa-users"></i> Arkadaşlarım</h3>
-        <p class="small-text">Kullanıcı adı girerek arkadaş ekle.</p>
-        
-        <div class="add-friend-box">
-            <input type="text" id="new-friend-name" placeholder="Kullanıcı Adı (Örn: ali)">
-            <button onclick="addFriend()" class="cta-btn small-btn">Ekle</button>
-        </div>
-
-        <ul id="friend-list">
-            </ul>
-    </div>
-</div>
-    </div>
-
-    <div id="admin-section" class="container" style="display: none;">
-        <h2>Yönetim Paneli</h2>
-        <div class="admin-controls">
-            <h3>Yeni Film Ekle</h3>
-            <input type="text" id="new-title" placeholder="Film Adı">
-            <input type="text" id="new-director" placeholder="Yönetmen">
-            <select id="new-genre">
-                <option value="Action">Action</option>
-                <option value="Sci-Fi">Sci-Fi</option>
-                <option value="Drama">Drama</option>
-            </select>
-            <button onclick="addNewMovie()" class="cta-btn">Ekle</button>
-        </div>
-        <h3>Film Envanteri</h3>
+        <h2>Biletlerim</h2>
         <table class="data-table">
             <thead>
-                <tr><th>ID</th><th>Başlık</th><th>Yönetmen</th><th>Tür</th><th>İşlem</th></tr>
+                <tr><th>Film</th><th>Tarih</th><th>Saat</th><th>Koltuk</th><th>Tutar</th><th>İşlem</th></tr>
             </thead>
-            <tbody id="admin-movies-body"></tbody>
+            <tbody id="user-tickets-body">
+                {% for ticket in my_tickets %}
+                <tr>
+                    <td>{{ ticket.session.movie.title }}</td>
+                    <td>{{ ticket.session.start_time|date:"d M Y" }}</td> 
+                    <td><span class="highlight">{{ ticket.session.start_time|date:"H:i" }}</span></td>
+                    <td>{{ ticket.seat_number }}</td>
+                    <td>{{ ticket.price }} TL</td>
+                    <td>
+                        <button onclick="cancelTicket({{ ticket.booking_id }})" 
+                                style="background-color: #e50914; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem;">
+                            İptal Et
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #aaa; padding: 20px;">
+                        Henüz hiç biletiniz yok.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
         </table>
-    </div>
-
-    <div id="login-modal" class="modal">
-        <div class="modal-content" style="max-width: 300px;">
-            <span class="close-login" style="float:right; cursor:pointer;">&times;</span>
-            <h2>Giriş Yap</h2>
-            <input type="text" id="username" placeholder="Kullanıcı Adı" style="width:100%; padding:10px; margin:10px 0;">
-            <input type="password" id="password" placeholder="Şifre" style="width:100%; padding:10px; margin:10px 0;">
-            <button onclick="login()" class="cta-btn" style="width:100%;">Giriş</button>
-            <p style="font-size:0.8rem; margin-top:10px; color:#aaa;">Admin: admin/admin <br> User: user/user</p>
-        </div>
     </div>
 
     <div id="booking-modal" class="modal">
-        <div class="modal-content">
+        <div class="modal-content" style="max-width: 600px;">
             <span class="close-btn">&times;</span>
             
             <div class="booking-header">
                 <h2 id="modal-title">Film Başlığı</h2>
-                <p id="modal-info">Seans Bilgileri</p>
+                <p id="modal-info" style="color:#aaa; font-size:0.9rem; margin-bottom:10px;">Detaylar</p>
             </div>
 
-            <div class="session-selector">
-    <span>Seans Seç:</span>
-    <button class="time-btn active" onclick="selectSession('13:00', this)">13:00</button>
-    <button class="time-btn" onclick="selectSession('17:00', this)">17:00</button>
-</div>
-
-            <div class="tab-header">
-                <button class="tab-btn active" onclick="switchTab('booking')">Bilet Al</button>
-                <button class="tab-btn" onclick="switchTab('reviews')">Yorumlar & Puan</button>
+            <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px;">
+                <button class="cta-btn tab-btn active" onclick="switchTab('booking')">Bilet Al</button>
+                <button class="cta-btn tab-btn" onclick="switchTab('reviews')" style="background:#333;">Yorumlar</button>
             </div>
 
-            <div id="tab-booking" class="tab-content active">
+            <div id="tab-booking" class="tab-content">
+                <div class="session-selector">
+                    <span>Seans Seç:</span>
+                    <button class="time-btn active" onclick="selectSession('13:00', this)">13:00</button>
+                    <button class="time-btn" onclick="selectSession('17:00', this)">17:00</button>
+                </div>
+
                 <div class="screen-container">
                     <div class="screen">PERDE</div>
                 </div>
+                
                 <div class="seats-container" id="seats-grid"></div>
-                <ul class="showcase">
-                    <li><div class="seat"></div> <small>Boş</small></li>
-                    <li><div class="seat selected"></div> <small>Seçili</small></li>
-                    <li><div class="seat occupied"></div> <small>Dolu</small></li>
-                    <li><div class="seat friend"></div> <small>Arkadaş</small></li>
-                </ul>
+                
                 <div class="booking-footer">
-                    <p class="text">Seçilen: <span id="count">0</span> | Tutar: <span id="total">0</span> TL</p>
-                    <button id="confirm-btn">Rezervasyonu Tamamla</button>
+                    <p class="text">Adet: <span id="count">0</span> | Tutar: <span id="total">0</span> TL</p>
+                    <button id="confirm-btn" class="cta-btn" style="width:100%; margin-top:10px;">Ödeme Yap</button>
                 </div>
             </div>
 
-            <div id="tab-reviews" class="tab-content">
-                <div class="review-stats">
-                    <span id="avg-rating-display" class="big-rating">0.0</span>
-                    <div class="stars-display" id="avg-stars">★★★★☆</div>
-                    <small>(<span id="review-count">0</span> değerlendirme)</small>
-                </div>
-                <div class="reviews-list" id="reviews-list"></div>
-                <div class="add-review-box">
-                    <h4>Puan Ver & Yorum Yap</h4>
-                    <div class="star-rating">
-                        <input type="radio" name="rate" id="rate-5" value="5"><label for="rate-5">★</label>
-                        <input type="radio" name="rate" id="rate-4" value="4"><label for="rate-4">★</label>
-                        <input type="radio" name="rate" id="rate-3" value="3"><label for="rate-3">★</label>
-                        <input type="radio" name="rate" id="rate-2" value="2"><label for="rate-2">★</label>
-                        <input type="radio" name="rate" id="rate-1" value="1"><label for="rate-1">★</label>
+            <div id="tab-reviews" class="tab-content" style="display:none; text-align:left;">
+                
+                <div id="reviews-list" style="max-height: 200px; overflow-y: auto; margin-bottom: 20px; border-bottom: 1px solid #333;">
                     </div>
-                    <textarea id="review-text" placeholder="Film hakkında düşüncelerin..."></textarea>
-                    <button onclick="submitReview()" class="cta-btn small-btn">Gönder</button>
+
+                <div class="add-review-box">
+                    <h4 style="margin-bottom:10px;">Puan Ver:</h4>
+                    <div class="star-rating" style="font-size: 24px; color: #f1c40f; cursor: pointer; margin-bottom: 10px;">
+                        <span onclick="setRating(1)">★</span>
+                        <span onclick="setRating(2)">★</span>
+                        <span onclick="setRating(3)">★</span>
+                        <span onclick="setRating(4)">★</span>
+                        <span onclick="setRating(5)">★</span>
+                        <span id="rating-text" style="font-size: 14px; color: white; margin-left: 10px;">(0/5)</span>
+                    </div>
+                    <textarea id="review-comment" placeholder="Film nasıldı?" style="width:100%; padding:10px; background:#333; color:white; border:none; border-radius:5px;"></textarea>
+                    <button onclick="submitReview()" class="cta-btn" style="width:100%; margin-top:10px;">Yorumu Gönder</button>
                 </div>
             </div>
 
         </div>
     </div>
-<script>
-    const movies = [
-        {% for movie in movies_from_db %}
-        {
-            id: {{ movie.movie_id }},
-            title: "{{ movie.title }}",
-            genre: "{{ movie.genre }}",
-            director: "{{ movie.director }}",
-            rating: 4.8, // Modelinde yoksa varsayılan
-            price: 150,  // Modelinde yoksa varsayılan
-            image: "https://m.media-amazon.com/images/M/MV5BMzLiY2E0ZWMtNzM4My00Y2FiLWI3N2QtMTA0N2Q0ODRjMzE0XkEyXkFqcGdeQXVyMTMxODk2OTU@._V1_.jpg"
-        }{% if not forloop.last %},{% endif %}
-        {% endfor %}
-    ];
-</script>
+    <div id="login-modal" class="modal">
+        <div class="modal-content" style="max-width: 300px; background-color: #1f2025; color: white;">
+            <span class="close-login" style="float:right; cursor:pointer; font-size: 24px;">&times;</span>
+            <h2 style="margin-bottom: 20px;">Giriş Yap</h2>
+            
+            <input type="text" id="username" placeholder="Kullanıcı Adı" 
+                   style="width:100%; padding:10px; margin:10px 0; background:#333; border:none; color:white; border-radius:4px;">
+            
+            <input type="password" id="password" placeholder="Şifre" 
+                   style="width:100%; padding:10px; margin:10px 0; background:#333; border:none; color:white; border-radius:4px;">
+            
+            <button onclick="login()" class="cta-btn" style="width:100%; margin-top: 10px;">Giriş</button>
+            
+            <p style="margin-top: 15px; font-size: 0.8rem; color: #aaa;">
+                Hesabın yok mu? <a href="#" onclick="switchModal('register')" style="color: #e50914;">Kayıt Ol</a>
+            </p>
+        </div>
+    </div>
+    <div id="register-modal" class="modal">
+        <div class="modal-content" style="max-width: 300px; background-color: #1f2025; color: white;">
+            <span class="close-register" style="float:right; cursor:pointer; font-size: 24px;">&times;</span>
+            <h2 style="margin-bottom: 20px;">Hesap Oluştur</h2>
+            
+            <input type="text" id="reg-username" placeholder="Kullanıcı Adı" 
+                   style="width:100%; padding:10px; margin:10px 0; background:#333; border:none; color:white; border-radius:4px;">
+            
+            <input type="email" id="reg-email" placeholder="E-posta Adresi" 
+                   style="width:100%; padding:10px; margin:10px 0; background:#333; border:none; color:white; border-radius:4px;">
 
-<script src="{% static 'cinema/script.js' %}"></script>
+            <input type="password" id="reg-password" placeholder="Şifre" 
+                   style="width:100%; padding:10px; margin:10px 0; background:#333; border:none; color:white; border-radius:4px;">
+            
+            <button onclick="register()" class="cta-btn" style="width:100%; margin-top: 10px; background-color: #46d369;">Kayıt Ol</button>
+            
+            <p style="margin-top: 15px; font-size: 0.8rem; color: #aaa;">
+                Zaten hesabın var mı? <a href="#" onclick="switchModal('login')" style="color: #e50914;">Giriş Yap</a>
+            </p>
+        </div>
+    </div>
 
-<script src="{% static 'cinema/script.js' %}"></script>
-    <script src="{% static 'cinema/script.js' %}"></script>
+    <script>
+        const movies = [
+            {% for movie in movies_from_db %}
+            {
+                id: {{ movie.movie_id }},
+                title: "{{ movie.title }}",
+                genre: "{{ movie.genre }}",
+                director: "{{ movie.director }}",
+                rating: 4.8, 
+                price: 150,
+                image: "{{ movie.poster_url|safe|default:'https://via.placeholder.com/300x450' }}"
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        // 2. DOLU KOLTUKLAR (YENİ KISIM)
+        const dbBookings = [
+            {% for booking in bookings_from_db %}
+            {
+                movieId: {{ booking.session.movie.movie_id }}, // Hangi film?
+                seatIndex: {{ booking.seat_number }},          // Hangi koltuk?
+                // Veritabanındaki tarih saatinden sadece saati alıyoruz (Örn: "13:00")
+                time: "{{ booking.session.start_time|date:'H:i' }}" 
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+
+        // 3. YORUMLAR (YENİ)
+        const dbReviews = [
+            {% for review in reviews_from_db %}
+            {
+                movieId: {{ review.movie.movie_id }},
+                user: "{{ review.user.name }}",
+                rating: {{ review.rating }},
+                comment: "{{ review.comment|escapejs }}",
+                verified: {{ review.is_verified_purchase|yesno:"true,false" }}
+            }{% if not forloop.last %},{% endif %}
+            {% endfor %}
+        ];
+    </script>
+
+    <script src="{% static 'cinema/script.js' %}?v=3"></script>
 </body>
 </html>
