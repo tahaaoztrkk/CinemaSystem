@@ -22,7 +22,7 @@ class Movie(models.Model):
     description = models.TextField(verbose_name="Özet", blank=True, null=True)
     genre = models.CharField(max_length=50, blank=True, null=True)
     director = models.CharField(max_length=100, blank=True, null=True)
-    duration = models.IntegerField(null=True)
+    duration = models.IntegerField(null=True,blank=True)
     release_date = models.DateField(blank=True, null=True)
     poster_url = models.URLField(verbose_name="Afiş URL", blank=True, null=True)
     trailer_url = models.URLField(verbose_name="Fragman URL", blank=True, null=True)

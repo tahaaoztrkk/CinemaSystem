@@ -8,6 +8,7 @@ from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.db.models import Avg
 from django.contrib import messages
+from cinema_project.services import get_ai_response
 
 
 # Modellerini içeri aktar
@@ -322,6 +323,31 @@ def handle_request(request):
 
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
+        
+@csrf_exempt  # Test aşamasında kolaylık olsun diye CSRF'i es geçiyoruz, prodüksiyonda token eklenmeli
+def chat_api(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            user_message = data.get('message', '')
+
+            # Veritabanındaki filmleri çekip AI'a kopya veriyoruz (Context)
+            # Sadece isimlerini alıyoruz ki token sınırı dolmasın
+            movies = Movie.objects.all().values_list('title', flat=True)
+            movies_context = ", ".join(movies)
+            
+            # Eğer hiç film yoksa
+            if not movies_context:
+                movies_context = "Şu an listemizde film bulunmuyor."
+
+            # Servise gönder
+            ai_reply = get_ai_response(user_message, movies_context)
+            
+            return JsonResponse({'response': ai_reply})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Sadece POST isteği kabul edilir.'}, status=405)
 
 @csrf_exempt
 def api_logout(request):

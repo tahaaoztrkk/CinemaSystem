@@ -34,16 +34,26 @@ def get_trailer_url_tmdb(movie_id):
 # --- Gemini Servisi (Chatbot) ---
 def get_ai_response(user_message, context_text):
     """Gemini AI ile sohbet eder."""
+    print("--- AI Fonksiyonu Çalıştı ---") # Debug: Fonksiyona girdi mi?
+    print(f"API Key Durumu: {GEMINI_API_KEY[:5]}..." if GEMINI_API_KEY else "API KEY BULUNAMADI!") # Debug: Key var mı?
+
     try:
+        if not GEMINI_API_KEY:
+            raise ValueError("API Key .env dosyasından okunamadı.")
+
         genai.configure(api_key=GEMINI_API_KEY)
-        model = genai.GenerativeModel('gemini-pro')
+        model = genai.GenerativeModel('models/gemini-2.5-flash') # Modeli "gemini-2.5-flash"
         
         prompt = (
             f"Sen bir sinema asistanısın. Şu an vizyondaki filmlerimiz: {context_text}. "
             f"Kullanıcı sorusu: {user_message}. "
             "Kısa, öz ve Türkçe cevap ver."
         )
+        
         response = model.generate_content(prompt)
         return response.text
+
     except Exception as e:
+        # HATA BURADA YAZACAK
+        print(f"!!! HATA OLUŞTU !!!: {str(e)}")
         return "Şu an bağlantıda sorun var, lütfen sonra tekrar dene."

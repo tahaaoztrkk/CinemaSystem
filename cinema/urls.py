@@ -15,4 +15,5 @@ urlpatterns = [
     path('api/handle_request/', views.handle_request, name='handle_request'),
     path('', views.index, name='index'),
     path('db-guncelle/', views.sync_tmdb_movies, name='sync_movies'),
+    path('api/chat/', views.chat_api, name='chat_api'),
 ]

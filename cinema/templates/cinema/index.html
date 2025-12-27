@@ -226,6 +226,111 @@
         </div>
     </div>
 
+    <div id="chat-widget" style="position: fixed; bottom: 20px; right: 20px; z-index: 9999; font-family: sans-serif;">
+    <button id="chat-toggle" style="background-color: #e50914; color: white; border: none; border-radius: 50%; width: 60px; height: 60px; cursor: pointer; box-shadow: 0 4px 8px rgba(0,0,0,0.3); font-size: 24px;">
+        💬
+    </button>
+
+    <div id="chat-box" style="display: none; width: 350px; height: 450px; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); flex-direction: column; overflow: hidden; margin-bottom: 80px;">
+        
+        <div style="background-color: #e50914; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between;">
+            <span>🎬 Sinema Asistanı</span>
+            <span id="close-chat" style="cursor: pointer;">✖</span>
+        </div>
+
+        <div id="chat-messages" style="flex: 1; padding: 15px; overflow-y: auto; background-color: #f1f1f1; display: flex; flex-direction: column; gap: 10px;">
+            <div style="align-self: flex-start; background: #e0e0e0; padding: 8px 12px; border-radius: 15px 15px 15px 0; max-width: 80%; color: #333;">
+                Merhaba! Bugün hangi filmi izlemek istersin? 🍿
+            </div>
+        </div>
+
+        <div style="padding: 10px; background: white; border-top: 1px solid #ddd; display: flex;">
+            <input type="text" id="user-input" placeholder="Bir şeyler yazın..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none;">
+            <button id="send-btn" style="background: #e50914; color: white; border: none; padding: 10px 15px; margin-left: 5px; border-radius: 50%; cursor: pointer;">➤</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    const chatToggle = document.getElementById('chat-toggle');
+    const chatBox = document.getElementById('chat-box');
+    const closeChat = document.getElementById('close-chat');
+    const sendBtn = document.getElementById('send-btn');
+    const userInput = document.getElementById('user-input');
+    const messagesArea = document.getElementById('chat-messages');
+
+    // Aç/Kapa İşlemi
+    chatToggle.addEventListener('click', () => {
+        chatBox.style.display = chatBox.style.display === 'none' ? 'flex' : 'none';
+        chatToggle.style.display = 'none'; // Kutuyu açınca butonu gizle
+    });
+
+    closeChat.addEventListener('click', () => {
+        chatBox.style.display = 'none';
+        chatToggle.style.display = 'block';
+    });
+
+    // Mesaj Ekleme Fonksiyonu
+    function addMessage(text, sender) {
+        const div = document.createElement('div');
+        div.textContent = text;
+        div.style.padding = '8px 12px';
+        div.style.maxWidth = '80%';
+        div.style.wordWrap = 'break-word';
+        
+        if (sender === 'user') {
+            div.style.alignSelf = 'flex-end';
+            div.style.background = '#e50914';
+            div.style.color = 'white';
+            div.style.borderRadius = '15px 15px 0 15px';
+        } else {
+            div.style.alignSelf = 'flex-start';
+            div.style.background = '#e0e0e0';
+            div.style.color = '#333';
+            div.style.borderRadius = '15px 15px 15px 0';
+        }
+        
+        messagesArea.appendChild(div);
+        messagesArea.scrollTop = messagesArea.scrollHeight; // En alta kaydır
+    }
+
+    // Backend'e İstek Gönderme
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        addMessage(text, 'user');
+        userInput.value = '';
+
+        // "Yazıyor..." efekti eklenebilir buraya
+
+        try {
+            const response = await fetch('/api/chat/', { // URL'i urls.py'daki path ile eşleştirin
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ message: text })
+            });
+
+            const data = await response.json();
+            if (data.response) {
+                addMessage(data.response, 'bot');
+            } else {
+                addMessage("Bir hata oluştu.", 'bot');
+            }
+        } catch (error) {
+            console.error('Hata:', error);
+            addMessage("Bağlantı hatası!", 'bot');
+        }
+    }
+
+    sendBtn.addEventListener('click', sendMessage);
+    userInput.addEventListener('keypress', (e) => {
+        if (e.key === 'Enter') sendMessage();
+    });
+</script>
+
     <script>
         const movies = [
             {% for movie in movies_from_db %}
