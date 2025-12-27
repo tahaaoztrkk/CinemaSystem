@@ -18,12 +18,15 @@ class AppUser(models.Model):
 
 class Movie(models.Model):
     movie_id = models.AutoField(primary_key=True)
-    title = models.CharField(max_length=200)
+    title = models.CharField(max_length=200, verbose_name="Film Adı")
+    description = models.TextField(verbose_name="Özet", blank=True, null=True)
     genre = models.CharField(max_length=50, blank=True, null=True)
     director = models.CharField(max_length=100, blank=True, null=True)
-    duration = models.IntegerField()
+    duration = models.IntegerField(null=True)
     release_date = models.DateField(blank=True, null=True)
-    poster_url = models.URLField(max_length=500, null=True, blank=True)
+    poster_url = models.URLField(verbose_name="Afiş URL", blank=True, null=True)
+    trailer_url = models.URLField(verbose_name="Fragman URL", blank=True, null=True)
+    tmdb_id = models.IntegerField(unique=True, verbose_name="TMDB ID", null=True, blank=True)
 
     def __str__(self):
         return self.title

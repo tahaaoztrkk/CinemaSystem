@@ -1,4 +1,4 @@
-from django.shortcuts import render
+from django.shortcuts import render , redirect
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.utils import timezone
@@ -7,9 +7,12 @@ import datetime
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.models import User
 from django.db.models import Avg
+from django.contrib import messages
+
 
 # Modellerini içeri aktar
 from .models import Movie, Booking, AppUser, Showtime, Salon, Review, FriendRequest
+from cinema_project.services import get_popular_movies_tmdb, get_trailer_url_tmdb
 
 # views.py dosyasındaki index fonksiyonunu şöyle değiştir:
 def index(request):
@@ -68,6 +71,37 @@ def index(request):
     return render(request, 'cinema/index.html', context)
     
 
+
+def sync_tmdb_movies(request):
+    """TMDB'den verileri çeker ve veritabanına kaydeder."""
+    # Sadece adminler yapabilsin istersen buraya @login_required veya user check eklenebilir
+    
+    movies_data = get_popular_movies_tmdb()
+    
+    count = 0
+    for item in movies_data:
+        # Veritabanında bu film zaten var mı diye TMDB ID ile kontrol et
+        if not Movie.objects.filter(tmdb_id=item['id']).exists():
+            
+            # Fragmanı bul
+            trailer = get_trailer_url_tmdb(item['id'])
+            
+            # Afiş linkini oluştur (TMDB base url + poster path)
+            poster_full_path = f"https://image.tmdb.org/t/p/w500{item['poster_path']}" if item.get('poster_path') else None
+
+            # Yeni filmi oluştur
+            Movie.objects.create(
+                title=item['title'],
+                description=item['overview'],
+                tmdb_id=item['id'],
+                poster_url=poster_full_path,
+                trailer_url=trailer,
+                # release_date=item['release_date'] # Eğer modelinde tarih alanı varsa bunu da ekle
+            )
+            count += 1
+            
+    messages.success(request, f"{count} yeni film TMDB'den başarıyla çekildi!")
+    return redirect('index') # İş bitince ana sayfaya dön
 
 @csrf_exempt
 def book_ticket(request):

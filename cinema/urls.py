@@ -13,4 +13,6 @@ urlpatterns = [
     path('api/add_review/', views.add_review, name='add_review'),
     path('api/add_friend/', views.add_friend, name='add_friend'),
     path('api/handle_request/', views.handle_request, name='handle_request'),
+    path('', views.index, name='index'),
+    path('db-guncelle/', views.sync_tmdb_movies, name='sync_movies'),
 ]
