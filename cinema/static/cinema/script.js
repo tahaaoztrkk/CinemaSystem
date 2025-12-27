@@ -81,7 +81,6 @@ function openBooking(movie) {
     updateSelection();
 }
 
-// Koltukları Çiz
 // Koltukları Çiz (GÜNCELLENMİŞ)
 function generateSeats() {
     seatsContainer.innerHTML = '';
@@ -90,21 +89,25 @@ function generateSeats() {
         const seat = document.createElement('div');
         seat.classList.add('seat');
 
-        // dbBookings listesinden kontrol et:
-        // 1. Film ID eşleşiyor mu?
-        // 2. Koltuk numarası eşleşiyor mu?
-        // 3. Seans saati eşleşiyor mu?
-        const isOccupied = dbBookings.find(b => 
+        // Rezervasyon bilgisini bul
+        const booking = dbBookings.find(b => 
             b.movieId === currentMovieId && 
             b.seatIndex === i && 
             b.time === currentSessionTime
         );
 
-        if (isOccupied) {
-            seat.classList.add('occupied'); // Dolu olarak işaretle
+        if (booking) {
+            seat.classList.add('occupied'); // Dolu
+            
+            // EĞER ARKADAŞIMSA ÖZEL STİL EKLE
+            if (booking.isFriend) {
+                seat.classList.add('friend'); 
+                seat.setAttribute('data-name', `${booking.ownerName} Burada!`); // İsim balonu
+                seat.innerText = "★"; // Yıldız ikonu
+            }
         } else {
+            // Boş koltuk tıklama olayı (eskisi gibi)
             seat.addEventListener('click', () => {
-                // Sadece boşsa tıklanabilsin
                 if (!seat.classList.contains('occupied')) {
                     seat.classList.toggle('selected');
                     updateSelection();
@@ -410,6 +413,25 @@ async function submitReview() {
         }
     } catch (error) {
         console.error(error);
+    }
+}
+
+async function addFriend() {
+    const username = document.getElementById('friend-username').value;
+    if (!username) return alert("Kullanıcı adı girin.");
+
+    try {
+        const response = await fetch('/api/add_friend/', {
+            method: 'POST',
+            body: JSON.stringify({ username: username })
+        });
+        const result = await response.json();
+        
+        alert(result.message);
+        if(result.status === 'success') location.reload();
+        
+    } catch (e) {
+        console.error(e);
     }
 }
 

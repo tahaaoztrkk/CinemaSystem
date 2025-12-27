@@ -103,3 +103,81 @@ h2 { margin-bottom: 20px; border-left: 5px solid var(--primary-color); padding-l
 .data-table { width: 100%; border-collapse: collapse; margin-top: 10px; background: var(--secondary-color); }
 .data-table th, .data-table td { padding: 15px; border-bottom: 1px solid #333; text-align: left; }
 .data-table th { background-color: var(--primary-color); }
+
+/* Arkadaş Koltuğu Stili */
+/* ARKADAŞ KOLTUĞU (ÖNEMLİ: !important kullanarak diğer renkleri eziyoruz) */
+/* --- ARKADAŞ KOLTUĞU (MAVİ & BALONCUKLU) --- */
+.seat.friend {
+    background-color: #3498db !important; /* Arkadaş Rengi: Mavi */
+    box-shadow: 0 0 10px rgba(52, 152, 219, 0.6); /* Hafif Parlama */
+    color: white !important;
+    font-size: 14px; 
+    font-weight: bold;
+    
+    /* İçerik Hizalama */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    
+    position: relative; /* Baloncuk buna yapışsın diye ŞART */
+    cursor: help; 
+    border: 1px solid rgba(255,255,255,0.3); /* Hafif çerçeve */
+}
+
+/* --- KONUŞMA BALONU (TOOLTIP) --- */
+
+/* 1. Balonun Gövdesi */
+.seat.friend:hover::after {
+    content: attr(data-name); /* HTML'den ismi çek */
+    
+    position: absolute;
+    bottom: 40px; /* Başlangıç konumu */
+    left: 50%;
+    transform: translateX(-50%);
+    
+    background-color: #222; /* Koyu Gri Balon */
+    color: #fff;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 12px;
+    font-weight: bold;
+    white-space: nowrap;
+    z-index: 1000;
+    box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+    
+    /* Animasyon */
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+/* 2. Balonun Oku (Üçgen) */
+.seat.friend:hover::before {
+    content: '';
+    position: absolute;
+    bottom: 30px; /* Başlangıç konumu */
+    left: 50%;
+    transform: translateX(-50%);
+    
+    border: 6px solid transparent;
+    border-top-color: #222; /* Ok rengi balonla AYNI (#222) yapıldı */
+    z-index: 1000;
+    
+    /* Animasyon */
+    opacity: 0;
+    visibility: hidden;
+    transition: all 0.3s ease;
+}
+
+/* Hover Durumunda Görünür Yapma (Animasyonlu Yükseliş) */
+.seat.friend:hover::after {
+    opacity: 1;
+    visibility: visible;
+    bottom: 50px; /* Yukarı doğru kayarak açılır */
+}
+
+.seat.friend:hover::before {
+    opacity: 1;
+    visibility: visible;
+    bottom: 38px; /* Yukarı doğru kayarak açılır */
+}

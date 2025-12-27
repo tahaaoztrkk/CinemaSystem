@@ -88,6 +88,29 @@
                 {% endfor %}
             </tbody>
         </table>
+        <div style="margin-top: 40px; padding: 20px; background: #221f1f; border-radius: 10px;">
+            <h3><i class="fas fa-users"></i> Arkadaşlarım</h3>
+            
+            <div style="margin: 15px 0; display: flex; gap: 10px;">
+                <input type="text" id="friend-username" placeholder="Kullanıcı Adı Girin (Örn: ali)" 
+                       style="padding: 10px; border-radius: 5px; border: none; width: 250px;">
+                <button onclick="addFriend()" class="cta-btn" style="padding: 10px 20px;">Arkadaş Ekle</button>
+            </div>
+
+            <ul style="list-style: none; padding: 0;">
+                {% if current_app_user %}
+                    {% for friend in current_app_user.friends.all %}
+                        <li style="padding: 10px; border-bottom: 1px solid #333;">
+                            <i class="fas fa-user"></i> {{ friend.name }}
+                        </li>
+                    {% empty %}
+                        <li style="color: #777;">Henüz arkadaşınız yok.</li>
+                    {% endfor %}
+                {% else %}
+                    <li>Arkadaş listesini görmek için giriş yapmalısınız.</li>
+                {% endif %}
+            </ul>
+        </div>
     </div>
 
     <div id="booking-modal" class="modal">
@@ -200,14 +223,16 @@
             {% endfor %}
         ];
 
-        // 2. DOLU KOLTUKLAR (YENİ KISIM)
+        
+        // 2. DOLU KOLTUKLAR (GELİŞMİŞ VERSİYON)
         const dbBookings = [
-            {% for booking in bookings_from_db %}
+            {% for b in bookings_json %}
             {
-                movieId: {{ booking.session.movie.movie_id }}, // Hangi film?
-                seatIndex: {{ booking.seat_number }},          // Hangi koltuk?
-                // Veritabanındaki tarih saatinden sadece saati alıyoruz (Örn: "13:00")
-                time: "{{ booking.session.start_time|date:'H:i' }}" 
+                movieId: {{ b.movie_id }},
+                seatIndex: {{ b.seat_number }},
+                time: "{{ b.time|date:'H:i' }}",
+                isFriend: {{ b.is_friend|yesno:"true,false" }}, // Arkadaş mı?
+                ownerName: "{{ b.owner_name }}" // Kim almış?
             }{% if not forloop.last %},{% endif %}
             {% endfor %}
         ];
@@ -226,6 +251,6 @@
         ];
     </script>
 
-    <script src="{% static 'cinema/script.js' %}?v=3"></script>
+    <script src="{% static 'cinema/script.js' %}?v=6"></script>
 </body>
 </html>

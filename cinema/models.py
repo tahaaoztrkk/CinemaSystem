@@ -7,7 +7,8 @@ class AppUser(models.Model):
     password_hash = models.CharField(max_length=255)
     membership_level = models.CharField(max_length=20, blank=True, null=True)
     preferences = models.TextField(blank=True, null=True)
-
+    
+    friends = models.ManyToManyField('self', blank=True, symmetrical=True)
     def __str__(self):
         return self.name
 

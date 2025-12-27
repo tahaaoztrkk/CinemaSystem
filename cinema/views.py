@@ -13,29 +13,56 @@ from .models import Movie, Booking, AppUser, Showtime, Salon, Review
 
 # views.py dosyasındaki index fonksiyonunu şöyle değiştir:
 def index(request):
+    # 1. Filmler ve Puanlar
     db_movies = Movie.objects.annotate(avg_rating=Avg('review__rating'))
-    db_bookings = Booking.objects.all() # Dolu koltuklar için hepsi lazım
+    
+    # 2. Yorumlar
     db_reviews = Review.objects.all().order_by('-created_at')
-    # KULLANICIYA ÖZEL BİLETLERİ ÇEKME
-    user_tickets = []
+
+    # 3. Biletler ve Arkadaş Kontrolü (BURASI DEĞİŞTİ)
+    all_bookings = Booking.objects.all()
+    bookings_data = [] # HTML'e gidecek özel liste
+    
+    current_app_user = None
+    my_friends_ids = [] # Arkadaşların ID listesi
+
     if request.user.is_authenticated:
-        # 1. Giriş yapan kullanıcının AppUser kaydını bul
-        # (book_ticket fonksiyonunda ismi username olarak kaydetmiştik)
         try:
-            app_user = AppUser.objects.get(name=request.user.username)
-            # 2. Sadece bu kullanıcıya ait biletleri filtrele
-            user_tickets = Booking.objects.filter(user=app_user).order_by('-booking_id')
-        except AppUser.DoesNotExist:
-            user_tickets = []
+            current_app_user = AppUser.objects.get(name=request.user.username)
+            # Arkadaşlarımın ID'lerini bir listeye alalım
+            my_friends_ids = list(current_app_user.friends.values_list('user_id', flat=True))
+        except:
+            pass
+
+    for booking in all_bookings:
+        # Bu bileti alan kişi benim arkadaşım mı?
+        is_friend_booking = False
+        if booking.user.user_id in my_friends_ids:
+            is_friend_booking = True
+        
+        bookings_data.append({
+            'movie_id': booking.session.movie.movie_id,
+            'seat_number': booking.seat_number,
+            'time': booking.session.start_time, # Template'de filter ile saat formatına dönecek
+            'is_friend': is_friend_booking,     # EVET/HAYIR
+            'owner_name': booking.user.name     # Kim almış?
+        })
+
+    # 4. Profilimdeki Biletler
+    user_tickets = []
+    if current_app_user:
+        user_tickets = Booking.objects.filter(user=current_app_user).order_by('-booking_id')
 
     context = {
         'movies_from_db': db_movies,
-        'bookings_from_db': db_bookings,
-        'my_tickets': user_tickets, # <-- HTML'e gönderdiğimiz yeni paket
-        'reviews_from_db': db_reviews
+        'bookings_json': bookings_data, # İşlenmiş veri gidiyor
+        'reviews_from_db': db_reviews,
+        'my_tickets': user_tickets,
+        'current_app_user': current_app_user # Profilde arkadaş listesi için lazım
     }
-    
     return render(request, 'cinema/index.html', context)
+    
+
 
 @csrf_exempt
 def book_ticket(request):
@@ -193,6 +220,36 @@ def add_review(request):
 
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+        
+@csrf_exempt
+def add_friend(request):
+    if request.method == 'POST':
+        if not request.user.is_authenticated:
+            return JsonResponse({'status': 'error', 'message': 'Giriş yapmalısınız.'})
+        
+        try:
+            data = json.loads(request.body)
+            target_username = data.get('username')
+            
+            # 1. Şu anki kullanıcıyı bul
+            current_app_user = AppUser.objects.get(name=request.user.username)
+            
+            # 2. Eklenecek arkadaşı bul
+            friend_user = AppUser.objects.get(name=target_username)
+            
+            # Kendini ekleyemesin
+            if current_app_user == friend_user:
+                return JsonResponse({'status': 'error', 'message': 'Kendinizi ekleyemezsiniz.'})
+            
+            # 3. Arkadaşlığı Kur
+            current_app_user.friends.add(friend_user)
+            
+            return JsonResponse({'status': 'success', 'message': f'{target_username} arkadaşlara eklendi!'})
+            
+        except AppUser.DoesNotExist:
+            return JsonResponse({'status': 'error', 'message': 'Kullanıcı bulunamadı.'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
 
 @csrf_exempt
 def api_logout(request):
