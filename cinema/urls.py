@@ -12,4 +12,5 @@ urlpatterns = [
     path('api/cancel/', views.cancel_ticket, name='cancel_ticket'),
     path('api/add_review/', views.add_review, name='add_review'),
     path('api/add_friend/', views.add_friend, name='add_friend'),
+    path('api/handle_request/', views.handle_request, name='handle_request'),
 ]

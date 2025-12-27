@@ -7,7 +7,7 @@ class AppUser(models.Model):
     password_hash = models.CharField(max_length=255)
     membership_level = models.CharField(max_length=20, blank=True, null=True)
     preferences = models.TextField(blank=True, null=True)
-    
+
     friends = models.ManyToManyField('self', blank=True, symmetrical=True)
     def __str__(self):
         return self.name
@@ -84,7 +84,23 @@ class Review(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     is_verified_purchase = models.BooleanField(default=False)
 
-
     class Meta:
         db_table = 'review'
         unique_together = (('user', 'movie'),)
+
+# ... diğer modellerin altına ekle ...
+
+class FriendRequest(models.Model):
+    from_user = models.ForeignKey(AppUser, related_name='sent_requests', on_delete=models.CASCADE)
+    to_user = models.ForeignKey(AppUser, related_name='received_requests', on_delete=models.CASCADE)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        # HATA BURADAYDI. DÜZELTİLMİŞ HALİ:
+        unique_together = ('from_user', 'to_user') 
+
+    def __str__(self):
+        return f"{self.from_user.name} -> {self.to_user.name}"
+
+
+    

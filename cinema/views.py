@@ -9,7 +9,7 @@ from django.contrib.auth.models import User
 from django.db.models import Avg
 
 # Modellerini içeri aktar
-from .models import Movie, Booking, AppUser, Showtime, Salon, Review
+from .models import Movie, Booking, AppUser, Showtime, Salon, Review, FriendRequest
 
 # views.py dosyasındaki index fonksiyonunu şöyle değiştir:
 def index(request):
@@ -53,12 +53,17 @@ def index(request):
     if current_app_user:
         user_tickets = Booking.objects.filter(user=current_app_user).order_by('-booking_id')
 
+    friend_requests = []
+    if current_app_user:
+        friend_requests = FriendRequest.objects.filter(to_user=current_app_user).order_by('-created_at')
+
     context = {
         'movies_from_db': db_movies,
         'bookings_json': bookings_data, # İşlenmiş veri gidiyor
         'reviews_from_db': db_reviews,
         'my_tickets': user_tickets,
-        'current_app_user': current_app_user # Profilde arkadaş listesi için lazım
+        'current_app_user': current_app_user, # Profilde arkadaş listesi için lazım
+        'friend_requests': friend_requests
     }
     return render(request, 'cinema/index.html', context)
     
@@ -231,23 +236,56 @@ def add_friend(request):
             data = json.loads(request.body)
             target_username = data.get('username')
             
-            # 1. Şu anki kullanıcıyı bul
-            current_app_user = AppUser.objects.get(name=request.user.username)
+            sender = AppUser.objects.get(name=request.user.username)
+            receiver = AppUser.objects.get(name=target_username)
             
-            # 2. Eklenecek arkadaşı bul
-            friend_user = AppUser.objects.get(name=target_username)
+            if sender == receiver:
+                return JsonResponse({'status': 'error', 'message': 'Kendinize istek atamazsınız.'})
             
-            # Kendini ekleyemesin
-            if current_app_user == friend_user:
-                return JsonResponse({'status': 'error', 'message': 'Kendinizi ekleyemezsiniz.'})
+            # Zaten arkadaş mı?
+            if receiver in sender.friends.all():
+                 return JsonResponse({'status': 'error', 'message': 'Zaten arkadaşsınız.'})
+
+            # Zaten istek atılmış mı?
+            if FriendRequest.objects.filter(from_user=sender, to_user=receiver).exists():
+                return JsonResponse({'status': 'error', 'message': 'Zaten bir istek gönderdiniz, cevap bekleniyor.'})
+
+            # İSTEK OLUŞTUR
+            FriendRequest.objects.create(from_user=sender, to_user=receiver)
             
-            # 3. Arkadaşlığı Kur
-            current_app_user.friends.add(friend_user)
-            
-            return JsonResponse({'status': 'success', 'message': f'{target_username} arkadaşlara eklendi!'})
+            return JsonResponse({'status': 'success', 'message': f'{target_username} kullanıcısına istek gönderildi!'})
             
         except AppUser.DoesNotExist:
             return JsonResponse({'status': 'error', 'message': 'Kullanıcı bulunamadı.'})
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)})
+        
+@csrf_exempt
+def handle_request(request):
+    if request.method == 'POST':
+        try:
+            data = json.loads(request.body)
+            request_id = data.get('request_id')
+            action = data.get('action') # 'accept' veya 'reject'
+
+            friend_req = FriendRequest.objects.get(id=request_id)
+            
+            # Güvenlik: Bu istek gerçekten bana mı gelmiş?
+            if friend_req.to_user.name != request.user.username:
+                return JsonResponse({'status': 'error', 'message': 'Yetkisiz işlem.'})
+
+            if action == 'accept':
+                # İki tarafı birbirine arkadaş yap
+                friend_req.to_user.friends.add(friend_req.from_user)
+                # İsteği sil (artık gerek yok)
+                friend_req.delete()
+                return JsonResponse({'status': 'success', 'message': 'Arkadaşlık isteği kabul edildi!'})
+            
+            elif action == 'reject':
+                # Sadece isteği sil
+                friend_req.delete()
+                return JsonResponse({'status': 'success', 'message': 'İstek reddedildi.'})
+
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
 

@@ -416,20 +416,36 @@ async function submitReview() {
     }
 }
 
-async function addFriend() {
-    const username = document.getElementById('friend-username').value;
+// 1. İSTEK GÖNDER
+async function sendFriendRequest() {
+    const usernameInput = document.getElementById('friend-username');
+    const username = usernameInput.value;
     if (!username) return alert("Kullanıcı adı girin.");
 
     try {
-        const response = await fetch('/api/add_friend/', {
+        const response = await fetch('/api/add_friend/', { // URL aynı kaldı ama backend değişti
             method: 'POST',
             body: JSON.stringify({ username: username })
         });
         const result = await response.json();
-        
         alert(result.message);
         if(result.status === 'success') location.reload();
         
+    } catch (e) {
+        console.error(e);
+    }
+}
+
+// 2. İSTEĞE CEVAP VER (Kabul/Red)
+async function respondToRequest(reqId, action) {
+    try {
+        const response = await fetch('/api/handle_request/', {
+            method: 'POST',
+            body: JSON.stringify({ request_id: reqId, action: action })
+        });
+        const result = await response.json();
+        alert(result.message);
+        location.reload(); // Listeyi güncelle
     } catch (e) {
         console.error(e);
     }
