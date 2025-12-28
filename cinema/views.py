@@ -9,6 +9,7 @@ from django.contrib.auth.models import User
 from django.db.models import Avg
 from django.contrib import messages
 from cinema_project.services import get_ai_response
+from django.db.models import Q
 
 
 # Modellerini içeri aktar
@@ -325,29 +326,95 @@ def handle_request(request):
             return JsonResponse({'status': 'error', 'message': str(e)})
         
 @csrf_exempt  # Test aşamasında kolaylık olsun diye CSRF'i es geçiyoruz, prodüksiyonda token eklenmeli
+@csrf_exempt
 def chat_api(request):
     if request.method == 'POST':
         try:
             data = json.loads(request.body)
-            user_message = data.get('message', '')
+            user_message = data.get('message', '').lower()
 
-            # Veritabanındaki filmleri çekip AI'a kopya veriyoruz (Context)
-            # Sadece isimlerini alıyoruz ki token sınırı dolmasın
-            movies = Movie.objects.all().values_list('title', flat=True)
-            movies_context = ", ".join(movies)
+            # --- 1. GİRİŞ YAPAN KULLANICIYI BUL ---
+            current_app_user = None
+            if request.user.is_authenticated:
+                try:
+                    current_app_user = AppUser.objects.get(name=request.user.username)
+                except AppUser.DoesNotExist:
+                    pass
+
+            # --- 2. HEDEF ARKADAŞI BUL (DİNAMİK TARAMA) ---
+            target_friend = None
             
-            # Eğer hiç film yoksa
-            if not movies_context:
-                movies_context = "Şu an listemizde film bulunmuyor."
+            if current_app_user:
+                # Sadece kendi arkadaşlarını getir (Tüm kullanıcıları değil)
+                # Böylece sadece arkadaşı olduğu kişiler için öneri alabilir
+                my_friends = current_app_user.friends.all()
+                
+                for friend in my_friends:
+                    # Mesajın içinde arkadaşın adı geçiyor mu? (küçük harfe çevirerek bak)
+                    if friend.name.lower() in user_message:
+                        target_friend = friend
+                        break # İlk bulunan arkadaşı seç ve döngüden çık
 
-            # Servise gönder
-            ai_reply = get_ai_response(user_message, movies_context)
+            # --- 3. VERİLERİ TOPLA (CONTEXT) ---
+            
+            # A) Vizyondaki Filmler (AI'ın seçmesi gereken havuz)
+            all_movies = Movie.objects.all().values_list('title', flat=True)
+            movies_context = ", ".join(all_movies) if all_movies else "Film yok."
+
+            # B) Geçmiş Verisi Hazırla
+            history_context = ""
+            
+            # DURUM 1: Arkadaş ismi bulundu (ORTAK ÖNERİ)
+            if current_app_user and target_friend:
+                # Benim izlediklerim
+                my_history = Booking.objects.filter(user=current_app_user).values_list('session__movie__title', flat=True).distinct()
+                my_str = ", ".join(my_history) if my_history else "Veri yok"
+
+                # Arkadaşın izledikleri
+                friend_history = Booking.objects.filter(user=target_friend).values_list('session__movie__title', flat=True).distinct()
+                friend_str = ", ".join(friend_history) if friend_history else "Veri yok"
+
+                history_context = f"""
+                DURUM: İki arkadaş sinemaya gidecek. Ortak zevklerine uygun film önerilmeli.
+                1. Kişi ({current_app_user.name}) geçmişte bunları izledi: {my_str}
+                2. Kişi ({target_friend.name}) geçmişte bunları izledi: {friend_str}
+                """
+            
+            # DURUM 2: Arkadaş adı yok, sadece kendisi için (KİŞİSEL ÖNERİ)
+            elif current_app_user:
+                my_history = Booking.objects.filter(user=current_app_user).values_list('session__movie__title', flat=True).distinct()
+                my_str = ", ".join(my_history) if my_history else "Veri yok"
+                
+                history_context = f"DURUM: Kullanıcı tek başına. Geçmişte izledikleri: {my_str}. Buna benzer bir şey öner."
+            
+            # DURUM 3: Giriş yapılmamış (GENEL ÖNERİ)
+            else:
+                history_context = "DURUM: Kullanıcı anonim. Popüler olanlardan öner."
+
+            # --- 4. GEMINI İÇİN NİHAİ PROMPT ---
+            final_prompt = f"""
+            Sen yardımsever bir sinema asistanısın.
+            
+            VİZYONDAKİ FİLMLER (Sadece bu listeden birini öner): [{movies_context}]
+            
+            {history_context}
+            
+            KULLANICI MESAJI: "{data.get('message')}"
+            
+            Önemli: Cevabın kısa, samimi ve Türkçe olsun. Filmi neden önerdiğini 1 cümleyle açıkla.
+            """
+
+            # --- 5. SERVİSE GÖNDER ---
+            # get_ai_response fonksiyonuna özel promptumuzu gönderiyoruz
+            ai_reply = get_ai_response(final_prompt, movies_context)
             
             return JsonResponse({'response': ai_reply})
+
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     
     return JsonResponse({'error': 'Sadece POST isteği kabul edilir.'}, status=405)
+
 
 @csrf_exempt
 def api_logout(request):
