@@ -184,3 +184,37 @@ h2 { margin-bottom: 20px; border-left: 5px solid var(--primary-color); padding-l
     visibility: visible;
     bottom: 40px; 
 }
+
+/* --- BİLET AFİŞLERİ (SABİT MİNİK BOYUT) --- */
+
+.ticket-poster-thumb {
+    /* Kesin boyutlar (Standart Poster Oranı 2:3) */
+    width: 40px !important;
+    height: 60px !important;
+    
+    /* EN ÖNEMLİ KISIM: Resmi kutuya sığdır, taşanları gizle */
+    object-fit: cover !important; 
+    
+    /* Görsellik */
+    border-radius: 4px;
+    border: 1px solid #444;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.5); /* Hafif gölge */
+    
+    /* Hizalama */
+    display: block;
+}
+
+/* Mouse üzerine gelince SADECE hafif parlasın (Devasa büyüme yok) */
+.ticket-poster-thumb:hover {
+    border-color: #e50914; /* Çerçeve kırmızı olsun */
+    opacity: 0.8; /* Hafif şeffaflık */
+    cursor: pointer;
+}
+
+/* Tablo hücresini de sıkı tutalım */
+.poster-wrapper {
+    width: 40px;
+    height: 60px;
+    overflow: hidden; /* Taşma olursa gizle */
+    border-radius: 4px;
+}
