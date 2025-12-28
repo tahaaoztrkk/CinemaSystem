@@ -1,4 +1,5 @@
 {% load static %}
+{% load custom_filters %}
 <!DOCTYPE html>
 <html lang="tr">
 <head>
@@ -46,11 +47,12 @@
 
     <div id="home-section">
         <main class="container">
+            {% if user.is_authenticated %}
             <section class="recommendations">
                 <h2><i class="fas fa-magic"></i> Sizin İçin Önerilenler</h2>
                 <div class="movie-grid" id="recommended-grid"></div>
             </section>
-
+            {% endif %}
             <section class="all-movies">
                 <h2>Vizyondaki Filmler</h2>
                 <div class="movie-grid" id="movies-grid"></div>
@@ -69,6 +71,7 @@
                     <th>Koltuk</th>
                     <th>Tutar</th>
                     <th>İşlem</th>
+                    <th>QR Kod</th> <th>İşlem</th>
                 </tr>
             </thead>
             <tbody id="user-tickets-body">
@@ -94,6 +97,13 @@
                             <i class="fas fa-trash"></i> İptal
                         </button>
                     </td>
+
+                    <td style="text-align: center;">
+            <button onclick="showQR('{{ ticket|generate_qr }}', '{{ ticket.session.movie.title }}')" 
+                    style="background: #f1c40f; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; color: black; font-weight: bold;">
+                <i class="fas fa-qrcode"></i> Göster
+            </button>
+        </td>
                 </tr>
                 {% empty %}
                 <tr>
@@ -267,6 +277,36 @@
     </div>
 </div>
 
+<div id="qr-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center;">
+    <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; max-width: 300px; position: relative;">
+        
+        <h3 id="qr-movie-title" style="color: black; margin-bottom: 15px;">Film Adı</h3>
+        
+        <img id="qr-image" src="" alt="Bilet QR" style="width: 200px; height: 200px;">
+        
+        <p style="color: #555; font-size: 12px; margin-top: 10px;">Gişede okutunuz.</p>
+        
+        <button onclick="document.getElementById('qr-modal').style.display='none'" 
+                style="margin-top: 15px; background: #e50914; color: white; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer;">
+            Kapat
+        </button>
+    </div>
+</div>
+
+<script>
+    // QR Modal Açma Fonksiyonu
+    function showQR(base64Image, movieTitle) {
+        document.getElementById('qr-image').src = base64Image;
+        document.getElementById('qr-movie-title').innerText = movieTitle;
+        document.getElementById('qr-modal').style.display = 'flex';
+    }
+    
+    // Dışarı tıklayınca kapat
+    document.getElementById('qr-modal').onclick = function(e) {
+        if(e.target === this) this.style.display = 'none';
+    }
+</script>
+
 <script>
     const chatToggle = document.getElementById('chat-toggle');
     const chatBox = document.getElementById('chat-box');
@@ -348,6 +388,7 @@
 </script>
 
     <script>
+        const userFavoriteGenre = "{{ favorite_genre|default:''|escapejs }}";
         const movies = [
             {% for movie in movies_from_db %}
             {
@@ -358,6 +399,7 @@
                 rating: {{ movie.avg_rating|default:0|stringformat:".1f" }}, 
                 price: 150,
                 image: "{{ movie.poster_url|safe|default:'https://via.placeholder.com/300x450' }}"
+                
             }{% if not forloop.last %},{% endif %}
             {% endfor %}
         ];

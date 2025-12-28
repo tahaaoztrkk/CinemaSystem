@@ -29,25 +29,54 @@ const homeSection = document.getElementById('home-section');
 const profileSection = document.getElementById('profile-section');
 const heroSection = document.querySelector('.hero');
 
+
+
 // --- 3. TEMEL FONKSİYONLAR ---
 
 // Filmleri Ekrana Bas (HTML'den gelen 'movies' değişkenini kullanır)
+// FİLM LİSTELEME VE ÖNERİ MOTORU
 function renderMovies() {
-    if (!moviesGrid) return; // Hata önleyici
-
+    if (!moviesGrid) return;
     moviesGrid.innerHTML = '';
-    recommendedGrid.innerHTML = '';
+    
+    if (typeof movies !== 'undefined') {
+        // 1. Tüm Filmleri Listele (Vizyondakiler)
+        movies.forEach(movie => {
+            moviesGrid.appendChild(createMovieCard(movie));
+        });
+        
+        // 2. Önerilenleri Listele (Kişisel Geçmişe Göre)
+        if (recommendedGrid) {
+            recommendedGrid.innerHTML = '';
+            let recs = [];
 
-    // Tüm Filmleri Listele
-    movies.forEach(movie => {
-        moviesGrid.appendChild(createMovieCard(movie));
-    });
+            // Eğer kullanıcının favori türü varsa (Backend'den geldiyse)
+            if (userFavoriteGenre && userFavoriteGenre !== "") {
+                console.log("Kullanıcının favori türü:", userFavoriteGenre);
+                
+                // Sadece o türe ait filmleri filtrele
+                // (includes kullanıyoruz ki 'Action, Adventure' gibi çoklu türleri de yakalasın)
+                recs = movies.filter(m => m.genre && m.genre.includes(userFavoriteGenre));
+                
+                // Başlığı Güncelle (Opsiyonel ama şık olur)
+                const recTitle = document.querySelector('.recommendations h2');
+                if(recTitle) recTitle.innerHTML = `<i class="fas fa-heart"></i> Çünkü "${userFavoriteGenre}" Seviyorsunuz`;
 
-    // Sadece Favori Türü Listele
-    const recommendations = movies.filter(m => m.genre === currentUser.favoriteGenre);
-    recommendations.forEach(movie => {
-        recommendedGrid.appendChild(createMovieCard(movie));
-    });
+            } else {
+                // Eğer bilet geçmişi yoksa varsayılan olarak "Sci-Fi" veya yüksek puanlıları öner
+                recs = movies.filter(m => m.rating >= 4.0); // Örn: Puanı 4 ve üzeri olanlar
+            }
+
+            // Hiç film bulunamazsa (Örn: O türde film yoksa)
+            if (recs.length === 0) {
+                 recommendedGrid.innerHTML = '<p style="color:#aaa; padding:10px;">Şu an size özel önerimiz yok.</p>';
+            } else {
+                recs.forEach(movie => {
+                    recommendedGrid.appendChild(createMovieCard(movie));
+                });
+            }
+        }
+    }
 }
 
 // Film Kartı HTML Oluşturucu

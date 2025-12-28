@@ -17,30 +17,43 @@ from .models import Movie, Booking, AppUser, Showtime, Salon, Review, FriendRequ
 from cinema_project.services import get_popular_movies_tmdb, get_trailer_url_tmdb
 
 # views.py dosyasındaki index fonksiyonunu şöyle değiştir:
-def index(request):
-    # 1. Filmler ve Puanlar
-    db_movies = Movie.objects.annotate(avg_rating=Avg('review__rating'))
-    
-    # 2. Yorumlar
-    db_reviews = Review.objects.all().order_by('-created_at')
+from collections import Counter # En üste ekle
 
-    # 3. Biletler ve Arkadaş Kontrolü (BURASI DEĞİŞTİ)
+def index(request):
+    # 1. Temel Veriler
+    db_movies = Movie.objects.annotate(avg_rating=Avg('review__rating'))
+    db_reviews = Review.objects.all().order_by('-created_at')
     all_bookings = Booking.objects.all()
-    bookings_data = [] # HTML'e gidecek özel liste
     
+    bookings_data = []
     current_app_user = None
-    my_friends_ids = [] # Arkadaşların ID listesi
+    my_friends_ids = []
+    
+    # --- YENİ DEĞİŞKEN: FAVORİ TÜR ---
+    favorite_genre = "" # Varsayılan boş
 
     if request.user.is_authenticated:
         try:
             current_app_user = AppUser.objects.get(name=request.user.username)
-            # Arkadaşlarımın ID'lerini bir listeye alalım
             my_friends_ids = list(current_app_user.friends.values_list('user_id', flat=True))
-        except:
+            
+            # --- YENİ: KULLANICININ BİLET GEÇMİŞİNDEN TÜR BULMA ---
+            # 1. Kullanıcının aldığı tüm biletleri çek
+            user_past_bookings = Booking.objects.filter(user=current_app_user)
+            
+            # 2. Bu biletlerin film türlerini bir listeye at (Örn: ['Sci-Fi', 'Action', 'Sci-Fi'])
+            genres = [b.session.movie.genre for b in user_past_bookings if b.session.movie.genre]
+            
+            # 3. En çok tekrar edeni bul
+            if genres:
+                most_common = Counter(genres).most_common(1) # En çok geçen 1 taneyi al
+                favorite_genre = most_common[0][0] # Örn: "Sci-Fi"
+                
+        except AppUser.DoesNotExist:
             pass
 
+    # (Diğer işlemler aynen kalıyor...)
     for booking in all_bookings:
-        # Bu bileti alan kişi benim arkadaşım mı?
         is_friend_booking = False
         if booking.user.user_id in my_friends_ids:
             is_friend_booking = True
@@ -48,10 +61,27 @@ def index(request):
         bookings_data.append({
             'movie_id': booking.session.movie.movie_id,
             'seat_number': booking.seat_number,
-            'time': booking.session.start_time, # Template'de filter ile saat formatına dönecek
-            'is_friend': is_friend_booking,     # EVET/HAYIR
-            'owner_name': booking.user.name     # Kim almış?
+            'time': booking.session.start_time,
+            'is_friend': is_friend_booking,
+            'owner_name': booking.user.name
         })
+
+    user_tickets = []
+    friend_requests = []
+    if current_app_user:
+        user_tickets = Booking.objects.filter(user=current_app_user).order_by('-booking_id')
+        friend_requests = FriendRequest.objects.filter(to_user=current_app_user).order_by('-created_at')
+
+    context = {
+        'movies_from_db': db_movies,
+        'bookings_json': bookings_data,
+        'reviews_from_db': db_reviews,
+        'my_tickets': user_tickets,
+        'current_app_user': current_app_user,
+        'friend_requests': friend_requests,
+        'favorite_genre': favorite_genre  # <-- BUNU HTML'E GÖNDERİYORUZ
+    }
+    return render(request, 'cinema/index.html', context)
 
     # 4. Profilimdeki Biletler
     user_tickets = []
