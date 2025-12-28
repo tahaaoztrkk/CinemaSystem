@@ -5,19 +5,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Smart Cinema - Tenet Gösterimi</title>
+    <title>CineMate</title>
     <link rel="stylesheet" href="{% static 'cinema/style.css' %}">
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 </head>
 <body>
 
     <nav class="navbar">
-        <div class="logo">Smart<span class="highlight">Cinema</span></div>
+        <div class="logo">Cine<span class="highlight">Mate</span></div>
         <ul class="nav-links">
-            <li><a href="#" onclick="showSection('home')">Ana Sayfa</a></li>
+            <li><a href="#" onclick="showSection('home')">Main Page</a></li>
             
             {% if user.is_authenticated %}
-                <li><a href="#" onclick="showSection('profile')">Profilim</a></li>
+                <li><a href="#" onclick="showSection('profile')">My Profile</a></li>
             {% endif %}
         </ul>
         <div class="auth-buttons">
@@ -25,23 +25,23 @@
                 <div class="user-info" style="display: inline-block; margin-right: 10px; color: white;">
                     <i class="fas fa-user-circle"></i> {{ user.username }}
                 </div>
-                <button id="logout-btn" class="cta-btn" style="background:#333;">Çıkış</button>
-                <button id="login-btn" class="cta-btn" style="display:none;">Giriş Yap</button>
+                <button id="logout-btn" class="cta-btn" style="background:#333;">Logout</button>
+                <button id="login-btn" class="cta-btn" style="display:none;">Login</button>
             {% else %}
                 <div class="user-info" style="display: inline-block; margin-right: 10px; color: white;">
-                    <i class="fas fa-user-circle"></i> Misafir
+                    <i class="fas fa-user-circle"></i> Guest
                 </div>
-                <button id="login-btn" class="cta-btn">Giriş Yap</button>
-                <button id="logout-btn" class="cta-btn" style="display:none;">Çıkış</button>
+                <button id="login-btn" class="cta-btn">Login</button>
+                <button id="logout-btn" class="cta-btn" style="display:none;">Logout</button>
             {% endif %}
         </div>
     </nav>
 
     <header class="hero">
         <div class="hero-content">
-            <h1>Sinemanın Geleceği</h1>
-            <p>Tenet ve en yeni filmler burada.</p>
-            <button class="cta-btn" onclick="document.getElementById('movies-grid').scrollIntoView();">Bilet Al</button>
+            <h1>Watch Together, Stay Connected</h1>
+            <p>Discover movies tailored to you with AI and book your tickets instantly.</p>
+            <button class="cta-btn" onclick="document.getElementById('movies-grid').scrollIntoView();">Book Ticket</button>
         </div>
     </header>
 
@@ -49,29 +49,29 @@
         <main class="container">
             {% if user.is_authenticated %}
             <section class="recommendations">
-                <h2><i class="fas fa-magic"></i> Sizin İçin Önerilenler</h2>
+                <h2><i class="fas fa-magic"></i> Recommended for You</h2>
                 <div class="movie-grid" id="recommended-grid"></div>
             </section>
             {% endif %}
             <section class="all-movies">
-                <h2>Vizyondaki Filmler</h2>
+                <h2>Movies in Theaters</h2>
                 <div class="movie-grid" id="movies-grid"></div>
             </section>
         </main>
     </div>
 
     <div id="profile-section" class="container" style="display: none;">
-        <h2>Biletlerim</h2>
+        <h2>My Tickets</h2>
         <table class="data-table">
             <thead>
                 <tr>
-                    <th style="width: 60px;">Afiş</th> <th>Film</th>
-                    <th>Tarih</th>
-                    <th>Saat</th>
-                    <th>Koltuk</th>
-                    <th>Tutar</th>
-                    <th>İşlem</th>
-                    <th>QR Kod</th> <th>İşlem</th>
+                    <th style="width: 60px;">Afiş</th> <th>Movie</th>
+                    <th>Date</th>
+                    <th>Time</th>
+                    <th>Seat</th>
+                    <th>Price</th>
+                    <th>Action</th>
+                    <th>QR</th> <th>Action</th>
                 </tr>
             </thead>
             <tbody id="user-tickets-body">
@@ -94,21 +94,21 @@
                     <td>
                         <button onclick="cancelTicket({{ ticket.booking_id }})" 
                                 style="background-color: #333; color: white; border: 1px solid #555; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 0.8rem; transition: 0.3s;">
-                            <i class="fas fa-trash"></i> İptal
+                            <i class="fas fa-trash"></i> Cancel
                         </button>
                     </td>
 
                     <td style="text-align: center;">
             <button onclick="showQR('{{ ticket|generate_qr }}', '{{ ticket.session.movie.title }}')" 
                     style="background: #f1c40f; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; color: black; font-weight: bold;">
-                <i class="fas fa-qrcode"></i> Göster
+                <i class="fas fa-qrcode"></i> Show
             </button>
         </td>
                 </tr>
                 {% empty %}
                 <tr>
                     <td colspan="7" style="text-align: center; color: #aaa; padding: 20px;">
-                        Henüz hiç biletiniz yok.
+                        You have no ticket yet.
                     </td>
                 </tr>
                 {% endfor %}
@@ -116,20 +116,20 @@
         </table>
         <div style="margin-top: 40px; padding: 20px; background: #221f1f; border-radius: 10px;">
             
-            <h3><i class="fas fa-user-plus"></i> Arkadaş Ekle</h3>
+            <h3><i class="fas fa-user-plus"></i> Add Friend</h3>
             <div style="margin: 15px 0; display: flex; gap: 10px;">
-                <input type="text" id="friend-username" placeholder="Kullanıcı Adı (Örn: ali)" 
+                <input type="text" id="friend-username" placeholder="Username (Ex: ali)" 
                        style="padding: 10px; border-radius: 5px; border: none; width: 250px;">
-                <button onclick="sendFriendRequest()" class="cta-btn" style="padding: 10px 20px;">İstek Gönder</button>
+                <button onclick="sendFriendRequest()" class="cta-btn" style="padding: 10px 20px;">Send Request</button>
             </div>
 
             {% if friend_requests %}
             <div style="margin-bottom: 20px; background: #333; padding: 10px; border-radius: 5px;">
-                <h4 style="color: #f1c40f; margin-bottom: 10px;">🔔 Bekleyen İstekler</h4>
+                <h4 style="color: #f1c40f; margin-bottom: 10px;">🔔 Pending Requests</h4>
                 <ul style="list-style: none; padding: 0;">
                     {% for req in friend_requests %}
                     <li style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding: 8px 0;">
-                        <span><i class="fas fa-user"></i> <b>{{ req.from_user.name }}</b> seni eklemek istiyor.</span>
+                        <span><i class="fas fa-user"></i> <b>{{ req.from_user.name }}</b> want to add you.</span>
                         <div>
                             <button onclick="respondToRequest({{ req.id }}, 'accept')" style="background: green; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Kabul Et</button>
                             <button onclick="respondToRequest({{ req.id }}, 'reject')" style="background: #e50914; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Reddet</button>
@@ -140,7 +140,7 @@
             </div>
             {% endif %}
 
-            <h3><i class="fas fa-users"></i> Arkadaşlarım</h3>
+            <h3><i class="fas fa-users"></i> My Friends</h3>
             <ul style="list-style: none; padding: 0;">
                 {% if current_app_user %}
                     {% for friend in current_app_user.friends.all %}
@@ -148,10 +148,10 @@
                             <i class="fas fa-check-circle" style="color: green;"></i> {{ friend.name }}
                         </li>
                     {% empty %}
-                        <li style="color: #777;">Henüz arkadaşınız yok.</li>
+                        <li style="color: #777;">You have no friend.</li>
                     {% endfor %}
                 {% else %}
-                    <li>Giriş yapmalısınız.</li>
+                    <li>You should login</li>
                 {% endif %}
             </ul>
         </div>
@@ -162,31 +162,31 @@
             <span class="close-btn">&times;</span>
             
             <div class="booking-header">
-                <h2 id="modal-title">Film Başlığı</h2>
-                <p id="modal-info" style="color:#aaa; font-size:0.9rem; margin-bottom:10px;">Detaylar</p>
+                <h2 id="modal-title">Movie Title</h2>
+                <p id="modal-info" style="color:#aaa; font-size:0.9rem; margin-bottom:10px;">Details</p>
             </div>
 
             <div style="display:flex; justify-content:center; gap:10px; margin-bottom:20px;">
-                <button class="cta-btn tab-btn active" onclick="switchTab('booking')">Bilet Al</button>
-                <button class="cta-btn tab-btn" onclick="switchTab('reviews')" style="background:#333;">Yorumlar</button>
+                <button class="cta-btn tab-btn active" onclick="switchTab('booking')">Book Ticket</button>
+                <button class="cta-btn tab-btn" onclick="switchTab('reviews')" style="background:#333;">Reviews</button>
             </div>
 
             <div id="tab-booking" class="tab-content">
                 <div class="session-selector">
-                    <span>Seans Seç:</span>
+                    <span>Select Session:</span>
                     <button class="time-btn active" onclick="selectSession('13:00', this)">13:00</button>
                     <button class="time-btn" onclick="selectSession('17:00', this)">17:00</button>
                 </div>
 
                 <div class="screen-container">
-                    <div class="screen">PERDE</div>
+                    <div class="screen">SCREEN</div>
                 </div>
                 
                 <div class="seats-container" id="seats-grid"></div>
                 
                 <div class="booking-footer">
-                    <p class="text">Adet: <span id="count">0</span> | Tutar: <span id="total">0</span> TL</p>
-                    <button id="confirm-btn" class="cta-btn" style="width:100%; margin-top:10px;">Ödeme Yap</button>
+                    <p class="text">Count: <span id="count">0</span> | Total: <span id="total">0</span> TL</p>
+                    <button id="confirm-btn" class="cta-btn" style="width:100%; margin-top:10px;">Pay Now</button>
                 </div>
             </div>
 
@@ -196,7 +196,7 @@
                     </div>
 
                 <div class="add-review-box">
-                    <h4 style="margin-bottom:10px;">Puan Ver:</h4>
+                    <h4 style="margin-bottom:10px;">Rate Movie:</h4>
                     <div class="star-rating" style="font-size: 24px; color: #f1c40f; cursor: pointer; margin-bottom: 10px;">
                         <span onclick="setRating(1)">★</span>
                         <span onclick="setRating(2)">★</span>
@@ -205,8 +205,8 @@
                         <span onclick="setRating(5)">★</span>
                         <span id="rating-text" style="font-size: 14px; color: white; margin-left: 10px;">(0/5)</span>
                     </div>
-                    <textarea id="review-comment" placeholder="Film nasıldı?" style="width:100%; padding:10px; background:#333; color:white; border:none; border-radius:5px;"></textarea>
-                    <button onclick="submitReview()" class="cta-btn" style="width:100%; margin-top:10px;">Yorumu Gönder</button>
+                    <textarea id="review-comment" placeholder="How was the movie?" style="width:100%; padding:10px; background:#333; color:white; border:none; border-radius:5px;"></textarea>
+                    <button onclick="submitReview()" class="cta-btn" style="width:100%; margin-top:10px;">Submit Review</button>
                 </div>
             </div>
 
@@ -215,39 +215,39 @@
     <div id="login-modal" class="modal">
         <div class="modal-content" style="max-width: 300px; background-color: #1f2025; color: white;">
             <span class="close-login" style="float:right; cursor:pointer; font-size: 24px;">&times;</span>
-            <h2 style="margin-bottom: 20px;">Giriş Yap</h2>
+            <h2 style="margin-bottom: 20px;">Login</h2>
             
-            <input type="text" id="username" placeholder="Kullanıcı Adı" 
+            <input type="text" id="username" placeholder="Username" 
                    style="width:100%; padding:10px; margin:10px 0; background:#333; border:none; color:white; border-radius:4px;">
             
-            <input type="password" id="password" placeholder="Şifre" 
+            <input type="password" id="password" placeholder="Password" 
                    style="width:100%; padding:10px; margin:10px 0; background:#333; border:none; color:white; border-radius:4px;">
             
-            <button onclick="login()" class="cta-btn" style="width:100%; margin-top: 10px;">Giriş</button>
+            <button onclick="login()" class="cta-btn" style="width:100%; margin-top: 10px;">Login</button>
             
             <p style="margin-top: 15px; font-size: 0.8rem; color: #aaa;">
-                Hesabın yok mu? <a href="#" onclick="switchModal('register')" style="color: #e50914;">Kayıt Ol</a>
+                Don't have an account? <a href="#" onclick="switchModal('register')" style="color: #e50914;">Register</a>
             </p>
         </div>
     </div>
     <div id="register-modal" class="modal">
         <div class="modal-content" style="max-width: 300px; background-color: #1f2025; color: white;">
             <span class="close-register" style="float:right; cursor:pointer; font-size: 24px;">&times;</span>
-            <h2 style="margin-bottom: 20px;">Hesap Oluştur</h2>
+            <h2 style="margin-bottom: 20px;">Create Account</h2>
             
-            <input type="text" id="reg-username" placeholder="Kullanıcı Adı" 
+            <input type="text" id="reg-username" placeholder="Username" 
                    style="width:100%; padding:10px; margin:10px 0; background:#333; border:none; color:white; border-radius:4px;">
             
-            <input type="email" id="reg-email" placeholder="E-posta Adresi" 
+            <input type="email" id="reg-email" placeholder="Email Address" 
                    style="width:100%; padding:10px; margin:10px 0; background:#333; border:none; color:white; border-radius:4px;">
 
-            <input type="password" id="reg-password" placeholder="Şifre" 
+            <input type="password" id="reg-password" placeholder="Password" 
                    style="width:100%; padding:10px; margin:10px 0; background:#333; border:none; color:white; border-radius:4px;">
             
-            <button onclick="register()" class="cta-btn" style="width:100%; margin-top: 10px; background-color: #46d369;">Kayıt Ol</button>
+            <button onclick="register()" class="cta-btn" style="width:100%; margin-top: 10px; background-color: #46d369;">Register</button>
             
             <p style="margin-top: 15px; font-size: 0.8rem; color: #aaa;">
-                Zaten hesabın var mı? <a href="#" onclick="switchModal('login')" style="color: #e50914;">Giriş Yap</a>
+                Already have an account? <a href="#" onclick="switchModal('login')" style="color: #e50914;">Login</a>
             </p>
         </div>
     </div>
@@ -260,18 +260,18 @@
     <div id="chat-box" style="display: none; width: 350px; height: 450px; background: white; border-radius: 10px; box-shadow: 0 5px 15px rgba(0,0,0,0.3); flex-direction: column; overflow: hidden; margin-bottom: 80px;">
         
         <div style="background-color: #e50914; color: white; padding: 15px; font-weight: bold; display: flex; justify-content: space-between;">
-            <span>🎬 Sinema Asistanı</span>
+            <span>🎬 Cinema Assistant</span>
             <span id="close-chat" style="cursor: pointer;">✖</span>
         </div>
 
         <div id="chat-messages" style="flex: 1; padding: 15px; overflow-y: auto; background-color: #f1f1f1; display: flex; flex-direction: column; gap: 10px;">
             <div style="align-self: flex-start; background: #e0e0e0; padding: 8px 12px; border-radius: 15px 15px 15px 0; max-width: 80%; color: #333;">
-                Merhaba! Bugün hangi filmi izlemek istersin? 🍿
+                Hello! Which movie would you like to watch today? 🍿
             </div>
         </div>
 
         <div style="padding: 10px; background: white; border-top: 1px solid #ddd; display: flex;">
-            <input type="text" id="user-input" placeholder="Bir şeyler yazın..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none;">
+            <input type="text" id="user-input" placeholder="Type a message..." style="flex: 1; padding: 10px; border: 1px solid #ccc; border-radius: 20px; outline: none;">
             <button id="send-btn" style="background: #e50914; color: white; border: none; padding: 10px 15px; margin-left: 5px; border-radius: 50%; cursor: pointer;">➤</button>
         </div>
     </div>
@@ -280,11 +280,11 @@
 <div id="qr-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.8); z-index: 10000; justify-content: center; align-items: center;">
     <div style="background: white; padding: 20px; border-radius: 10px; text-align: center; max-width: 300px; position: relative;">
         
-        <h3 id="qr-movie-title" style="color: black; margin-bottom: 15px;">Film Adı</h3>
+        <h3 id="qr-movie-title" style="color: black; margin-bottom: 15px;">Movie Title</h3>
         
         <img id="qr-image" src="" alt="Bilet QR" style="width: 200px; height: 200px;">
         
-        <p style="color: #555; font-size: 12px; margin-top: 10px;">Gişede okutunuz.</p>
+        <p style="color: #555; font-size: 12px; margin-top: 10px;">Scan at the counter.</p>
         
         <button onclick="document.getElementById('qr-modal').style.display='none'" 
                 style="margin-top: 15px; background: #e50914; color: white; border: none; padding: 8px 20px; border-radius: 5px; cursor: pointer;">

@@ -140,7 +140,7 @@ def book_ticket(request):
     if request.method == 'POST':
         # GÜVENLİK KONTROLÜ: Kullanıcı giriş yapmamışsa işlem yapma!
         if not request.user.is_authenticated:
-            return JsonResponse({'status': 'error', 'message': 'Lütfen bilet almak için giriş yapınız.'}, status=401)
+            return JsonResponse({'status': 'error', 'message': 'Please log in to book a ticket.'}, status=401)
 
         try:
             data = json.loads(request.body)
@@ -153,7 +153,7 @@ def book_ticket(request):
             try:
                 user = AppUser.objects.get(name=current_user_name)
             except AppUser.DoesNotExist:
-                return JsonResponse({'status': 'error', 'message': 'Kullanıcı profili bulunamadı.'}, status=400)
+                return JsonResponse({'status': 'error', 'message': 'User profile not found.'}, status=400)
 
             movie = Movie.objects.get(movie_id=data['movieId'])
 
@@ -195,10 +195,10 @@ def api_login(request):
             return JsonResponse({
                 'status': 'success', 
                 'username': user.username,
-                'message': 'Giriş başarılı'
+                'message': 'Login successful'
             })
         else:
-            return JsonResponse({'status': 'error', 'message': 'Kullanıcı adı veya şifre hatalı'}, status=401)
+            return JsonResponse({'status': 'error', 'message': 'Invalid username or password'}, status=401)
 
 # views.py dosyasındaki api_register fonksiyonunu bununla değiştir:
 
@@ -213,7 +213,7 @@ def api_register(request):
 
             # 1. Kullanıcı adı dolu mu?
             if User.objects.filter(username=username).exists():
-                return JsonResponse({'status': 'error', 'message': 'Bu kullanıcı adı zaten alınmış.'})
+                return JsonResponse({'status': 'error', 'message': 'This username is already taken.'})
 
             # 2. Django Auth Kullanıcısını Oluştur (Giriş için)
             user = User.objects.create_user(username=username, email=email, password=password)
@@ -232,7 +232,7 @@ def api_register(request):
             # 4. Otomatik Giriş Yap
             login(request, user)
             
-            return JsonResponse({'status': 'success', 'username': user.username, 'message': 'Kayıt başarılı'})
+            return JsonResponse({'status': 'success', 'username': user.username, 'message': 'Registration successful'})
         except Exception as e:
              return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
         
@@ -240,7 +240,7 @@ def api_register(request):
 def cancel_ticket(request):
     if request.method == 'POST':
         if not request.user.is_authenticated:
-             return JsonResponse({'status': 'error', 'message': 'Yetkisiz işlem.'}, status=401)
+             return JsonResponse({'status': 'error', 'message': 'Unauthorized action.'}, status=401)
         
         try:
             data = json.loads(request.body)
@@ -251,9 +251,9 @@ def cancel_ticket(request):
             ticket = Booking.objects.get(booking_id=booking_id, user__name=request.user.username)
             ticket.delete()
             
-            return JsonResponse({'status': 'success', 'message': 'Bilet iptal edildi.'})
+            return JsonResponse({'status': 'success', 'message': 'Ticket successfully cancelled.'})
         except Booking.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Bilet bulunamadı veya size ait değil.'}, status=404)
+            return JsonResponse({'status': 'error', 'message': 'Ticket not found or does not belong to you.'}, status=404)
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
         
@@ -262,7 +262,7 @@ def cancel_ticket(request):
 def add_review(request):
     if request.method == 'POST':
         if not request.user.is_authenticated:
-            return JsonResponse({'status': 'error', 'message': 'Yorum yapmak için giriş yapmalısınız.'}, status=401)
+            return JsonResponse({'status': 'error', 'message': 'Please log in to post a review.'}, status=401)
 
         try:
             data = json.loads(request.body)
@@ -287,7 +287,7 @@ def add_review(request):
                 is_verified_purchase=has_ticket # Bilet aldıysa True olacak
             )
 
-            return JsonResponse({'status': 'success', 'message': 'Yorumunuz eklendi!'})
+            return JsonResponse({'status': 'success', 'message': 'Your review has been added!'})
 
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
@@ -296,7 +296,7 @@ def add_review(request):
 def add_friend(request):
     if request.method == 'POST':
         if not request.user.is_authenticated:
-            return JsonResponse({'status': 'error', 'message': 'Giriş yapmalısınız.'})
+            return JsonResponse({'status': 'error', 'message': 'Please log in first.'})
         
         try:
             data = json.loads(request.body)
@@ -306,23 +306,23 @@ def add_friend(request):
             receiver = AppUser.objects.get(name=target_username)
             
             if sender == receiver:
-                return JsonResponse({'status': 'error', 'message': 'Kendinize istek atamazsınız.'})
+                return JsonResponse({'status': 'error', 'message': 'You cannot send a friend request to yourself.'})
             
             # Zaten arkadaş mı?
             if receiver in sender.friends.all():
-                 return JsonResponse({'status': 'error', 'message': 'Zaten arkadaşsınız.'})
+                 return JsonResponse({'status': 'error', 'message': 'You are already friends.'})
 
             # Zaten istek atılmış mı?
             if FriendRequest.objects.filter(from_user=sender, to_user=receiver).exists():
-                return JsonResponse({'status': 'error', 'message': 'Zaten bir istek gönderdiniz, cevap bekleniyor.'})
+                return JsonResponse({'status': 'error', 'message': 'A friend request is already pending.'})
 
             # İSTEK OLUŞTUR
             FriendRequest.objects.create(from_user=sender, to_user=receiver)
             
-            return JsonResponse({'status': 'success', 'message': f'{target_username} kullanıcısına istek gönderildi!'})
+            return JsonResponse({'status': 'success', 'message': f'Friend request sent to {target_username}!'})
             
         except AppUser.DoesNotExist:
-            return JsonResponse({'status': 'error', 'message': 'Kullanıcı bulunamadı.'})
+            return JsonResponse({'status': 'error', 'message': 'User not found.'})
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
         
@@ -338,19 +338,19 @@ def handle_request(request):
             
             # Güvenlik: Bu istek gerçekten bana mı gelmiş?
             if friend_req.to_user.name != request.user.username:
-                return JsonResponse({'status': 'error', 'message': 'Yetkisiz işlem.'})
+                return JsonResponse({'status': 'error', 'message': 'Unauthorized action.'})
 
             if action == 'accept':
                 # İki tarafı birbirine arkadaş yap
                 friend_req.to_user.friends.add(friend_req.from_user)
                 # İsteği sil (artık gerek yok)
                 friend_req.delete()
-                return JsonResponse({'status': 'success', 'message': 'Arkadaşlık isteği kabul edildi!'})
+                return JsonResponse({'status': 'success', 'message': 'Friend request accepted!'})
             
             elif action == 'reject':
                 # Sadece isteği sil
                 friend_req.delete()
-                return JsonResponse({'status': 'success', 'message': 'İstek reddedildi.'})
+                return JsonResponse({'status': 'success', 'message': 'Friend request rejected.'})
 
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)})
@@ -389,7 +389,7 @@ def chat_api(request):
             
             # A) Vizyondaki Filmler (AI'ın seçmesi gereken havuz)
             all_movies = Movie.objects.all().values_list('title', flat=True)
-            movies_context = ", ".join(all_movies) if all_movies else "Film yok."
+            movies_context = ", ".join(all_movies) if all_movies else "No Movies."
 
             # B) Geçmiş Verisi Hazırla
             history_context = ""
@@ -398,40 +398,43 @@ def chat_api(request):
             if current_app_user and target_friend:
                 # Benim izlediklerim
                 my_history = Booking.objects.filter(user=current_app_user).values_list('session__movie__title', flat=True).distinct()
-                my_str = ", ".join(my_history) if my_history else "Veri yok"
+                my_str = ", ".join(my_history) if my_history else "No history"
 
                 # Arkadaşın izledikleri
                 friend_history = Booking.objects.filter(user=target_friend).values_list('session__movie__title', flat=True).distinct()
-                friend_str = ", ".join(friend_history) if friend_history else "Veri yok"
+                friend_str = ", ".join(friend_history) if friend_history else "No history"
 
                 history_context = f"""
-                DURUM: İki arkadaş sinemaya gidecek. Ortak zevklerine uygun film önerilmeli.
-                1. Kişi ({current_app_user.name}) geçmişte bunları izledi: {my_str}
-                2. Kişi ({target_friend.name}) geçmişte bunları izledi: {friend_str}
+                SCENARIO: Two friends are going to the cinema. You must recommend a movie based on their shared interests.
+                1. User ({current_app_user.name}) watched these in the past: {my_str}
+                2. Friend ({target_friend.name}) watched these in the past: {friend_str}
                 """
             
             # DURUM 2: Arkadaş adı yok, sadece kendisi için (KİŞİSEL ÖNERİ)
             elif current_app_user:
                 my_history = Booking.objects.filter(user=current_app_user).values_list('session__movie__title', flat=True).distinct()
-                my_str = ", ".join(my_history) if my_history else "Veri yok"
+                my_str = ", ".join(my_history) if my_history else "No history"
                 
-                history_context = f"DURUM: Kullanıcı tek başına. Geçmişte izledikleri: {my_str}. Buna benzer bir şey öner."
+                history_context = f"SCENARIO: User is alone. Watch history: {my_str}. Recommend something similar."
             
             # DURUM 3: Giriş yapılmamış (GENEL ÖNERİ)
             else:
-                history_context = "DURUM: Kullanıcı anonim. Popüler olanlardan öner."
+                history_context = "SCENARIO: User is anonymous. Recommend popular movies."
 
             # --- 4. GEMINI İÇİN NİHAİ PROMPT ---
             final_prompt = f"""
-            Sen yardımsever bir sinema asistanısın.
+            You are a helpful and friendly cinema assistant.
             
-            VİZYONDAKİ FİLMLER (Sadece bu listeden birini öner): [{movies_context}]
+            MOVIES IN THEATERS (Only recommend from this list): [{movies_context}]
             
             {history_context}
             
-            KULLANICI MESAJI: "{data.get('message')}"
+            USER MESSAGE: "{data.get('message')}"
             
-            Önemli: Cevabın kısa, samimi ve Türkçe olsun. Filmi neden önerdiğini 1 cümleyle açıkla.
+            IMPORTANT:
+            1. Respond ONLY in English.
+            2. Keep your answer short and friendly.
+            3. Explain why you recommended the movie in 1 sentence.
             """
 
             # --- 5. SERVİSE GÖNDER ---
@@ -443,10 +446,10 @@ def chat_api(request):
         except Exception as e:
             return JsonResponse({'error': str(e)}, status=400)
     
-    return JsonResponse({'error': 'Sadece POST isteği kabul edilir.'}, status=405)
+    return JsonResponse({'error': 'Only POST requests are allowed.'}, status=405)
 
 
 @csrf_exempt
 def api_logout(request):
     logout(request) # Oturumu kapat
-    return JsonResponse({'status': 'success', 'message': 'Çıkış yapıldı'})
+    return JsonResponse({'status': 'success', 'message': 'Logged out successfully'})

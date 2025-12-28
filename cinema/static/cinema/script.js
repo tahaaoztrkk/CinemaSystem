@@ -3,19 +3,6 @@ let currentSessionTime = "13:00";
 let selectedMoviePrice = 0;
 let currentMovieId = null;
 
-// Basit Kullanıcı (Sadece tür tercihi için)
-const currentUser = { 
-    favoriteGenre: "Sci-Fi" // Tenet Sci-Fi olduğu için ana sayfada görünecek
-};
-
-// Dolu Koltuklar (Şimdilik Sahte, sonra DB'den çekeceğiz)
-const allBookings = [
-    { movieId: 1, seatIndex: 10, time: "13:00" }, // Örnek dolu koltuk
-];
-
-// Kullanıcının aldığı biletleri tutan geçici dizi
-//const userTickets = [];
-
 // --- 2. DOM ELEMENTLERİ ---
 const moviesGrid = document.getElementById('movies-grid');
 const recommendedGrid = document.getElementById('recommended-grid');
@@ -52,7 +39,7 @@ function renderMovies() {
 
             // Eğer kullanıcının favori türü varsa (Backend'den geldiyse)
             if (userFavoriteGenre && userFavoriteGenre !== "") {
-                console.log("Kullanıcının favori türü:", userFavoriteGenre);
+                console.log("User's favorite genre:", userFavoriteGenre);
                 
                 // Sadece o türe ait filmleri filtrele
                 // (includes kullanıyoruz ki 'Action, Adventure' gibi çoklu türleri de yakalasın)
@@ -60,7 +47,7 @@ function renderMovies() {
                 
                 // Başlığı Güncelle (Opsiyonel ama şık olur)
                 const recTitle = document.querySelector('.recommendations h2');
-                if(recTitle) recTitle.innerHTML = `<i class="fas fa-heart"></i> Çünkü "${userFavoriteGenre}" Seviyorsunuz`;
+                if(recTitle) recTitle.innerHTML = `<i class="fas fa-heart"></i> Because you like "${userFavoriteGenre}"`;
 
             } else {
                 // Eğer bilet geçmişi yoksa varsayılan olarak "Sci-Fi" veya yüksek puanlıları öner
@@ -69,7 +56,7 @@ function renderMovies() {
 
             // Hiç film bulunamazsa (Örn: O türde film yoksa)
             if (recs.length === 0) {
-                 recommendedGrid.innerHTML = '<p style="color:#aaa; padding:10px;">Şu an size özel önerimiz yok.</p>';
+                 recommendedGrid.innerHTML = '<p style="color:#aaa; padding:10px;">No specific recommendations for you at the moment.</p>';
             } else {
                 recs.forEach(movie => {
                     recommendedGrid.appendChild(createMovieCard(movie));
@@ -131,7 +118,7 @@ function generateSeats() {
             // EĞER ARKADAŞIMSA ÖZEL STİL EKLE
             if (booking.isFriend) {
                 seat.classList.add('friend'); 
-                seat.setAttribute('data-name', `${booking.ownerName} Burada!`); // İsim balonu
+                seat.setAttribute('data-name', `${booking.ownerName} Here!`); // İsim balonu
                 seat.innerText = "★"; // Yıldız ikonu
             }
         } else {
@@ -209,11 +196,11 @@ confirmBtn.onclick = async () => {
                 return;
             }
         }
-        alert("Biletleriniz başarıyla alındı!");
+        alert("Tickets purchased successfully!");
         modal.style.display = 'none';
         location.reload(); 
     } else {
-        alert("Lütfen koltuk seçiniz.");
+        alert("Please select a seat.");
     }
 };
 
@@ -285,7 +272,7 @@ async function login() {
         const result = await response.json();
 
         if (result.status === 'success') {
-            alert("Hoşgeldin " + result.username);
+            alert("Welcome " + result.username);
             location.reload(); 
         } else {
             alert("Hata: " + result.message);
@@ -300,7 +287,7 @@ async function register() {
     const passInp = document.getElementById('reg-password').value;
 
     if (!userInp || !passInp) {
-        alert("Lütfen tüm alanları doldurun.");
+        alert("Please fill in all fields.");
         return;
     }
 
@@ -312,17 +299,17 @@ async function register() {
         const result = await response.json();
 
         if (result.status === 'success') {
-            alert("Kayıt Başarılı! Otomatik giriş yapılıyor...");
+            alert("Registration Successful! Logging in automatically...");
             location.reload(); 
         } else {
-            alert("Hata: " + result.message);
+            alert("Error: " + result.message);
         }
     } catch (error) { console.error(error); }
 }
 
 // BİLET İPTAL FONKSİYONU
 async function cancelTicket(bookingId) {
-    if(!confirm("Bu bileti iptal etmek istediğinize emin misiniz?")) return;
+    if(!confirm("Are you sure you want to cancel this ticket?")) return;
 
     try {
         const response = await fetch('/api/cancel/', {
@@ -333,13 +320,13 @@ async function cancelTicket(bookingId) {
         const result = await response.json();
 
         if (result.status === 'success') {
-            alert("Bilet iptal edildi.");
+            alert("Ticket cancelled.");
             location.reload(); // Sayfayı yenile ki listeden silinsin ve koltuk boşalsın
         } else {
-            alert("Hata: " + result.message);
+            alert("Error: " + result.message);
         }
     } catch (error) {
-        console.error("İptal hatası:", error);
+        console.error("Cancellation error:", error);
     }
 }
 
@@ -387,7 +374,7 @@ function loadReviewsForMovie() {
     const movieReviews = dbReviews.filter(r => r.movieId === currentMovieId);
 
     if (movieReviews.length === 0) {
-        list.innerHTML = '<p style="color:#aaa;">Henüz yorum yok. İlk yorumu sen yap!</p>';
+        list.innerHTML = '<p style="color:#aaa;">No reviews yet. Be the first to review!</p>';
         return;
     }
 
@@ -416,7 +403,7 @@ async function submitReview() {
     const comment = document.getElementById('review-comment').value;
 
     if (currentRating === 0) {
-        alert("Lütfen puan veriniz.");
+        alert("Please provide a rating.");
         return;
     }
 
@@ -433,12 +420,12 @@ async function submitReview() {
         const result = await response.json();
 
         if (result.status === 'success') {
-            alert("Yorumunuz eklendi!");
+            alert("Your review has been added!");
             location.reload(); // Sayfayı yenileyip yorumu göster
         } else if (response.status === 401) {
-            alert("Yorum yapmak için giriş yapmalısınız.");
+            alert("You must be logged in to leave a review.");
         } else {
-            alert("Hata: " + result.message);
+            alert("Error: " + result.message);
         }
     } catch (error) {
         console.error(error);
@@ -449,7 +436,7 @@ async function submitReview() {
 async function sendFriendRequest() {
     const usernameInput = document.getElementById('friend-username');
     const username = usernameInput.value;
-    if (!username) return alert("Kullanıcı adı girin.");
+    if (!username) return alert("Please enter a username.");
 
     try {
         const response = await fetch('/api/add_friend/', { // URL aynı kaldı ama backend değişti
