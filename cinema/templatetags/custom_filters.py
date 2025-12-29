@@ -9,15 +9,15 @@ register = template.Library()
 def generate_qr(booking):
     # 1. QR Kodun İçindeki Veri (Telefonda okutunca bu çıkar)
     data = f"""
-    SİNEMA BİLETİ
+    CINEMA TICKET
     ------------------
     ID: #{booking.booking_id}
-    Film: {booking.session.movie.title}
-    Tarih: {booking.session.start_time.strftime('%d.%m.%Y %H:%M')}
-    Koltuk: {booking.seat_number}
-    Sahibi: {booking.user.name}
+    Movie: {booking.session.movie.title}
+    Date: {booking.session.start_time.strftime('%d.%m.%Y %H:%M')}
+    Seat: {booking.seat_number}
+    Owner: {booking.user.name}
     ------------------
-    İyi Seyirler!
+    Enjoy the show!
     """
     
     # 2. QR Kodu Oluştur
