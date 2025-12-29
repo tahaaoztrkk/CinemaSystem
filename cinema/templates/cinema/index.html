@@ -131,8 +131,8 @@
                     <li style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid #444; padding: 8px 0;">
                         <span><i class="fas fa-user"></i> <b>{{ req.from_user.name }}</b> want to add you.</span>
                         <div>
-                            <button onclick="respondToRequest({{ req.id }}, 'accept')" style="background: green; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Kabul Et</button>
-                            <button onclick="respondToRequest({{ req.id }}, 'reject')" style="background: #e50914; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Reddet</button>
+                            <button onclick="respondToRequest({{ req.id }}, 'accept')" style="background: green; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Accept</button>
+                            <button onclick="respondToRequest({{ req.id }}, 'reject')" style="background: #e50914; color: white; border: none; padding: 5px 10px; cursor: pointer; border-radius: 3px;">Reject</button>
                         </div>
                     </li>
                     {% endfor %}
@@ -294,14 +294,14 @@
 </div>
 
 <script>
-    // QR Modal Açma Fonksiyonu
+    
     function showQR(base64Image, movieTitle) {
         document.getElementById('qr-image').src = base64Image;
         document.getElementById('qr-movie-title').innerText = movieTitle;
         document.getElementById('qr-modal').style.display = 'flex';
     }
     
-    // Dışarı tıklayınca kapat
+    
     document.getElementById('qr-modal').onclick = function(e) {
         if(e.target === this) this.style.display = 'none';
     }
@@ -315,10 +315,10 @@
     const userInput = document.getElementById('user-input');
     const messagesArea = document.getElementById('chat-messages');
 
-    // Aç/Kapa İşlemi
+    
     chatToggle.addEventListener('click', () => {
         chatBox.style.display = chatBox.style.display === 'none' ? 'flex' : 'none';
-        chatToggle.style.display = 'none'; // Kutuyu açınca butonu gizle
+        chatToggle.style.display = 'none'; 
     });
 
     closeChat.addEventListener('click', () => {
@@ -326,7 +326,7 @@
         chatToggle.style.display = 'block';
     });
 
-    // Mesaj Ekleme Fonksiyonu
+    
     function addMessage(text, sender) {
         const div = document.createElement('div');
         div.textContent = text;
@@ -347,10 +347,10 @@
         }
         
         messagesArea.appendChild(div);
-        messagesArea.scrollTop = messagesArea.scrollHeight; // En alta kaydır
+        messagesArea.scrollTop = messagesArea.scrollHeight; 
     }
 
-    // Backend'e İstek Gönderme
+    // Request to Backend
     async function sendMessage() {
         const text = userInput.value.trim();
         if (!text) return;
@@ -358,10 +358,8 @@
         addMessage(text, 'user');
         userInput.value = '';
 
-        // "Yazıyor..." efekti eklenebilir buraya
-
         try {
-            const response = await fetch('/api/chat/', { // URL'i urls.py'daki path ile eşleştirin
+            const response = await fetch('/api/chat/', { // match URL with urls.py
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',
@@ -405,20 +403,20 @@
         ];
 
         
-        // 2. DOLU KOLTUKLAR (GELİŞMİŞ VERSİYON)
+        // Booked Seats 
         const dbBookings = [
             {% for b in bookings_json %}
             {
                 movieId: {{ b.movie_id }},
                 seatIndex: {{ b.seat_number }},
                 time: "{{ b.time|date:'H:i' }}",
-                isFriend: {{ b.is_friend|yesno:"true,false" }}, // Arkadaş mı?
-                ownerName: "{{ b.owner_name }}" // Kim almış?
+                isFriend: {{ b.is_friend|yesno:"true,false" }}, 
+                ownerName: "{{ b.owner_name }}" 
             }{% if not forloop.last %},{% endif %}
             {% endfor %}
         ];
 
-        // 3. YORUMLAR (YENİ)
+        
         const dbReviews = [
             {% for review in reviews_from_db %}
             {

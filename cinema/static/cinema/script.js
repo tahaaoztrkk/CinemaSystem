@@ -388,7 +388,7 @@ function loadReviewsForMovie() {
         const stars = '★'.repeat(r.rating) + '☆'.repeat(5 - r.rating);
         
         // Onaylı İzleyici Rozeti
-        const badge = r.verified ? '<span style="background:green; font-size:10px; padding:2px 5px; border-radius:3px; margin-left:5px;">✓ İzledi</span>' : '';
+        const badge = r.verified ? '<span style="background:green; font-size:10px; padding:2px 5px; border-radius:3px; margin-left:5px;">✓ Watched</span>' : '';
 
         div.innerHTML = `
             <div style="font-weight:bold; color:#e50914;">${r.user} <span style="color:#f1c40f;">${stars}</span> ${badge}</div>
@@ -467,9 +467,9 @@ async function respondToRequest(reqId, action) {
     }
 }
 
-// Modal Kapatma
+
 closeBtn.onclick = () => modal.style.display = 'none';
 window.onclick = (e) => { if (e.target == modal) modal.style.display = 'none'; }
 
-// Uygulamayı Başlat
+
 renderMovies();

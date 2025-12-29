@@ -91,7 +91,7 @@ class Review(models.Model):
         db_table = 'review'
         unique_together = (('user', 'movie'),)
 
-# ... diğer modellerin altına ekle ...
+
 
 class FriendRequest(models.Model):
     from_user = models.ForeignKey(AppUser, related_name='sent_requests', on_delete=models.CASCADE)
@@ -99,7 +99,7 @@ class FriendRequest(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        # HATA BURADAYDI. DÜZELTİLMİŞ HALİ:
+        
         unique_together = ('from_user', 'to_user') 
 
     def __str__(self):
