@@ -70,7 +70,8 @@ def index(request):
     friend_requests = []
     if current_app_user:
         user_tickets = Booking.objects.filter(user=current_app_user).order_by('-booking_id')
-        friend_requests = FriendRequest.objects.filter(to_user=current_app_user).order_by('-created_at')
+        # Sadece 'Pending' olanları göster
+        friend_requests = FriendRequest.objects.filter(to_user=current_app_user, status='Pending').order_by('-created_at')
 
     context = {
         'movies_from_db': db_movies,
@@ -313,11 +314,22 @@ def add_friend(request):
                  return JsonResponse({'status': 'error', 'message': 'You are already friends.'})
 
             # Zaten istek atılmış mı?
-            if FriendRequest.objects.filter(from_user=sender, to_user=receiver).exists():
-                return JsonResponse({'status': 'error', 'message': 'A friend request is already pending.'})
+            existing_request = FriendRequest.objects.filter(from_user=sender, to_user=receiver).first()
 
-            # İSTEK OLUŞTUR
-            FriendRequest.objects.create(from_user=sender, to_user=receiver)
+            if existing_request:
+                if existing_request.status == 'Pending':
+                    return JsonResponse({'status': 'error', 'message': 'A friend request is already pending.'})
+                elif existing_request.status == 'Accepted':
+                    return JsonResponse({'status': 'error', 'message': 'You are already friends.'})
+                else:
+                    # Eğer 'Rejected' ise veya başka bir durumdaysa, durumu tekrar 'Pending' yapıp tarihi güncelle
+                    existing_request.status = 'Pending'
+                    existing_request.created_at = timezone.now() # timezone import edilmeli
+                    existing_request.save()
+                    return JsonResponse({'status': 'success', 'message': f'Friend request sent to {target_username}!'})
+
+            # Hiç kayıt yoksa yeni oluştur
+            FriendRequest.objects.create(from_user=sender, to_user=receiver, status='Pending')
             
             return JsonResponse({'status': 'success', 'message': f'Friend request sent to {target_username}!'})
             
@@ -343,13 +355,13 @@ def handle_request(request):
             if action == 'accept':
                 # İki tarafı birbirine arkadaş yap
                 friend_req.to_user.friends.add(friend_req.from_user)
-                # İsteği sil (artık gerek yok)
-                friend_req.delete()
+                friend_req.status = 'Accepted'
+                friend_req.save()
                 return JsonResponse({'status': 'success', 'message': 'Friend request accepted!'})
             
             elif action == 'reject':
-                # Sadece isteği sil
-                friend_req.delete()
+                friend_req.status = 'Rejected'
+                friend_req.save()
                 return JsonResponse({'status': 'success', 'message': 'Friend request rejected.'})
 
         except Exception as e:

@@ -94,9 +94,17 @@ class Review(models.Model):
 
 
 class FriendRequest(models.Model):
+
+    STATUS_CHOICES = (
+        ('Pending', 'Bekliyor'),
+        ('Accepted', 'Kabul Edildi'),
+        ('Rejected', 'Reddedildi'),
+    )
     from_user = models.ForeignKey(AppUser, related_name='sent_requests', on_delete=models.CASCADE)
     to_user = models.ForeignKey(AppUser, related_name='received_requests', on_delete=models.CASCADE)
     created_at = models.DateTimeField(auto_now_add=True)
+
+    status = models.CharField(max_length=10, choices=STATUS_CHOICES, default='Pending')
 
     class Meta:
         
